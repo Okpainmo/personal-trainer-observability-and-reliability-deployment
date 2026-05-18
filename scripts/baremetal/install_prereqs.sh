@@ -20,7 +20,9 @@ case "$arch" in
   *) echo "unsupported architecture: $arch" >&2; exit 1 ;;
 esac
 
-sudo mkdir -p "$BIN_DIR" "$WORK_DIR"
+sudo mkdir -p "$BIN_DIR"
+mkdir -p "$WORK_DIR"
+sudo chown "$(id -u):$(id -g)" "$WORK_DIR"
 
 package_manager=""
 if command -v apt-get >/dev/null 2>&1; then
@@ -40,7 +42,16 @@ download() {
   local url="$1"
   local dest="$2"
   if [ ! -f "$dest" ]; then
-    curl -fsSL "$url" -o "$dest"
+    echo "Downloading $url"
+    curl --fail --location --show-error --progress-bar \
+      --connect-timeout 30 \
+      --retry 3 \
+      --retry-delay 5 \
+      --max-time 900 \
+      "$url" \
+      -o "$dest"
+  else
+    echo "Using cached download $dest"
   fi
 }
 
@@ -50,6 +61,7 @@ install_tar_binary() {
   local url="$3"
   local binary="$4"
   local archive="$WORK_DIR/${name}-${version}.tar.gz"
+  echo "Installing $binary $version"
   download "$url" "$archive"
   tar -xzf "$archive" -C "$WORK_DIR"
   local extracted
@@ -63,6 +75,7 @@ install_zip_binary() {
   local url="$3"
   local binary="$4"
   local archive="$WORK_DIR/${name}-${version}.zip"
+  echo "Installing $binary $version"
   download "$url" "$archive"
   unzip -o "$archive" -d "$WORK_DIR/$name-$version" >/dev/null
   sudo install -m 0755 "$WORK_DIR/$name-$version/$binary" "$BIN_DIR/$binary"
@@ -107,14 +120,18 @@ install_tar_binary \
 if ! command -v grafana-server >/dev/null 2>&1; then
   if [ "$package_manager" = "apt" ]; then
     grafana_deb="$WORK_DIR/grafana_${GRAFANA_VERSION}_${deb_arch}.deb"
+    echo "Installing grafana-server $GRAFANA_VERSION"
     download "https://dl.grafana.com/oss/release/grafana_${GRAFANA_VERSION}_${deb_arch}.deb" "$grafana_deb"
     sudo dpkg -i "$grafana_deb" || sudo apt-get install -f -y
   else
     rpm_arch="$go_arch"
     grafana_rpm="$WORK_DIR/grafana-${GRAFANA_VERSION}-1.${rpm_arch}.rpm"
+    echo "Installing grafana-server $GRAFANA_VERSION"
     download "https://dl.grafana.com/oss/release/grafana-${GRAFANA_VERSION}-1.${rpm_arch}.rpm" "$grafana_rpm"
     sudo yum install -y "$grafana_rpm"
   fi
+else
+  echo "grafana-server already installed"
 fi
 
 echo "bare-metal prerequisites installed"
