@@ -1,0 +1,19 @@
+[Unit]
+Description=Loki log aggregation server
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=${service_user}
+Group=${service_user}
+Type=simple
+ExecStart=/usr/local/bin/loki -config.file=${config_dir}/loki/loki.yml
+Restart=always
+RestartSec=5
+LimitNOFILE=1048576
+NoNewPrivileges=true
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

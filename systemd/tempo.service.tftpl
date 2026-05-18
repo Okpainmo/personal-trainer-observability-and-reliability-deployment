@@ -1,0 +1,19 @@
+[Unit]
+Description=Tempo distributed tracing backend
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=${service_user}
+Group=${service_user}
+Type=simple
+ExecStart=/usr/local/bin/tempo -config.file=${config_dir}/tempo/tempo.yml
+Restart=always
+RestartSec=5
+LimitNOFILE=1048576
+NoNewPrivileges=true
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

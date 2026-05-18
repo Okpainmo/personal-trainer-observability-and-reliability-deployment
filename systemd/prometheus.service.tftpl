@@ -1,0 +1,23 @@
+[Unit]
+Description=Prometheus metrics server
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=${service_user}
+Group=${service_user}
+Type=simple
+ExecStart=/usr/local/bin/prometheus \
+  --config.file=${config_dir}/prometheus/prometheus.yml \
+  --storage.tsdb.path=${data_dir}/prometheus \
+  --storage.tsdb.retention.time=30d \
+  --web.listen-address=0.0.0.0:9090 \
+  --web.enable-lifecycle
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

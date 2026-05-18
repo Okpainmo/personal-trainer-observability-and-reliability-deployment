@@ -1,0 +1,20 @@
+[Unit]
+Description=DORA metrics exporter
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=${service_user}
+Group=${service_user}
+WorkingDirectory=${app_dir}/services/dora-exporter
+EnvironmentFile=${config_dir}/secrets/dora-exporter.env
+Environment=INCIDENTS_FILE=${app_dir}/services/dora-exporter/incidents.example.json
+Environment=POLL_INTERVAL_SECONDS=60
+ExecStart=${app_dir}/services/dora-exporter/.venv/bin/python ${app_dir}/services/dora-exporter/exporter.py
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

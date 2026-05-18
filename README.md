@@ -1,65 +1,110 @@
-# Personal Trainer Observability And Reliability Deployment
+# Personal Trainer Bare-Metal Observability And Reliability Platform
 
-Production-style observability and reliability platform for a demo `trainer-api` service. The stack is provisioned as code and uses the LGTM stack: Loki, Grafana, Tempo, and Prometheus.
+This repository deploys a production-style observability and reliability platform for `trainer-api` on bare metal Linux using Terraform and systemd. It does not use Docker.
 
-## What is included
+## Stack
 
-- Prometheus metrics collection and alert evaluation.
-- Loki log aggregation.
-- Tempo distributed tracing.
-- Grafana dashboards and datasources provisioned as code.
-- Node Exporter for CPU, memory, disk, network, and load metrics.
-- Blackbox Exporter for uptime, HTTP latency, and SSL probing.
-- Alertmanager routing, inhibition, and structured Slack notifications.
-- OpenTelemetry Collector for logs and traces.
-- OpenTelemetry-instrumented FastAPI service.
-- DORA exporter for deployment frequency, lead time, CFR, and MTTR.
-- SLI, SLO, error-budget, runbook, and Game Day documentation.
+- Prometheus for metrics and alert rule evaluation.
+- Loki for logs.
+- Tempo for distributed traces.
+- Grafana for dashboards, Explore, and metric/log/trace correlation.
+- Alertmanager for Slack alert routing.
+- Node Exporter for host CPU, memory, disk, network, and load metrics.
+- Blackbox Exporter for uptime, HTTP latency, and SSL expiry probes.
+- OpenTelemetry Collector for traces and journald log shipping.
+- `trainer-api`, an OpenTelemetry-instrumented FastAPI service.
+- DORA Exporter for deployment frequency, lead time, CFR, and MTTR.
 
 ## Architecture
 
-See [docs/architecture.md](docs/architecture.md) for Mermaid diagrams covering:
+See [docs/architecture.md](docs/architecture.md).
 
-- LGTM data flow.
-- SLI to SLO to error-budget to alert pipeline.
-- metric-to-log-to-trace drill-down.
-- Docker Compose deployment topology.
+Short flow:
+
+```text
+trainer-api metrics -> Prometheus -> Alertmanager -> Slack
+trainer-api traces -> OpenTelemetry Collector -> Tempo
+systemd journals -> OpenTelemetry Collector -> Loki
+Grafana -> Prometheus + Loki + Tempo
+```
 
 ## Prerequisites
 
-- Docker and Docker Compose.
+- Linux host with systemd.
 - Terraform 1.5 or newer.
-- A Slack incoming webhook for `#DevOps-Alerts`.
-- Optional: GitHub token with Actions read access for live DORA metrics.
+- `sudo` privileges.
+- Internet access for first-time binary installation.
+- Slack incoming webhook for `#detrudr-alerts-demo`.
+
+The install script supports Debian/Ubuntu with `apt-get` and RHEL-like systems with `yum`.
 
 ## One-command deployment
 
-Create a Terraform variables file:
+Create local Terraform variables:
 
 ```bash
 cp terraform/terraform.tfvars.example terraform/terraform.tfvars
 ```
 
-Set the Slack webhook in `terraform/terraform.tfvars`:
+Edit `terraform/terraform.tfvars`:
 
 ```hcl
 slack_webhook_url = "https://hooks.slack.com/services/..."
+grafana_admin_user = "admin"
+grafana_admin_password = "change-me"
+github_repository = "owner/repository"
+github_token = ""
+deployment_workflow_name = "deploy.yml"
+install_binaries = true
 ```
 
-Bring up the full platform:
+Deploy everything:
 
 ```bash
 make up
 ```
 
-The `make up` target runs:
+Equivalent:
 
 ```bash
 terraform -chdir=terraform init
 terraform -chdir=terraform apply -auto-approve
 ```
 
-Terraform creates the sensitive Slack webhook file and starts the Docker Compose stack.
+## What Terraform provisions
+
+Terraform renders secrets, Grafana config, and systemd units into `terraform/.generated`, then calls the bare-metal provisioning scripts.
+
+It installs or configures:
+
+- `/usr/local/bin/prometheus`
+- `/usr/local/bin/alertmanager`
+- `/usr/local/bin/loki`
+- `/usr/local/bin/tempo`
+- `/usr/local/bin/otelcol-contrib`
+- `/usr/local/bin/node_exporter`
+- `/usr/local/bin/blackbox_exporter`
+- Grafana server
+- Python virtualenvs for `trainer-api` and `dora-exporter`
+- systemd units for every component
+
+Config root:
+
+```text
+/etc/personal-trainer-observability
+```
+
+Data root:
+
+```text
+/var/lib/personal-trainer-observability
+```
+
+App root:
+
+```text
+/opt/personal-trainer-observability
+```
 
 ## Service URLs
 
@@ -67,108 +112,80 @@ Terraform creates the sensitive Slack webhook file and starts the Docker Compose
 - Prometheus: http://localhost:9090
 - Alertmanager: http://localhost:9093
 - Trainer API: http://localhost:8080
-- Loki: http://localhost:3100
-- Tempo: http://localhost:3200
+- Loki API: http://localhost:3100
+- Tempo API: http://localhost:3200
+- Node Exporter: http://localhost:9100
+- Blackbox Exporter: http://localhost:9115
+- DORA Exporter: http://localhost:9108
 
-Default Grafana credentials are `admin` / `admin` unless changed through `.env`.
+Loki and Tempo are API backends. Their root browser URL may return `404`; use Grafana Explore.
+
+## Useful commands
+
+```bash
+make up
+make status
+make logs
+make health
+make restart
+make down
+```
+
+Inspect one service:
+
+```bash
+systemctl status trainer-api --no-pager
+journalctl -u trainer-api -f
+```
+
+Generate telemetry:
+
+```bash
+curl http://localhost:8080/workout
+curl "http://localhost:8080/workout?delay_ms=1200"
+curl "http://localhost:8080/workout?fail=true"
+```
 
 ## Dashboards
 
 All dashboards are provisioned from `observability/grafana/dashboards`.
 
-- DORA Metrics: deployment frequency, classification, lead time, CFR, MTTR.
+- DORA Metrics: deployment frequency, lead time, CFR, MTTR, classification.
 - SLO & Error Budget: SLI gauges, budget remaining, burn rate, compliance history.
 - Node Exporter: CPU, memory, disk I/O, network I/O, load averages.
-- Blackbox Exporter: uptime timeline, response time, SSL expiry, probe success rate.
-- Unified Observability: request rate, latency, errors, Loki logs, Tempo traces.
+- Blackbox Exporter: uptime, response time, SSL expiry, probe success rate.
+- Unified Observability: request rate, error rate, latency, Loki logs, Tempo traces.
 
-The Loki datasource includes a derived field for `trace_id`, so logs from `trainer-api` can click through directly to Tempo.
-
-## Reliability definitions
-
-SLIs, SLO targets, rationale, and error-budget math are documented in [docs/sli-slo-error-budget.md](docs/sli-slo-error-budget.md).
-
-Error budget policy is documented in [docs/error-budget-policy.md](docs/error-budget-policy.md).
+The Loki datasource has a derived field for `trace_id`, so logs can click through to Tempo traces.
 
 ## Alerting
 
 Prometheus alert rules live in `observability/prometheus/rules`.
 
-Alertmanager config lives in `observability/alertmanager`.
+Alertmanager routes all alerts to:
 
-All alerts route to `#DevOps-Alerts` and include:
-
-- alert name
-- severity
-- service and host/instance
-- current value
-- dashboard link
-- runbook link
-- firing or resolved status
-
-Inhibition suppresses node-level noise when the matching instance is already unreachable.
-
-## Runbooks
-
-Runbooks live in `runbooks`.
-
-Current runbooks cover:
-
-- CPU saturation
-- memory saturation
-- disk saturation
-- instance down
-- SLO burn rate
-- change failure rate
-- MTTR too high
-
-## DORA metrics
-
-DORA details are in [docs/dora.md](docs/dora.md).
-
-For live GitHub Actions data, set these environment variables before running the stack:
-
-```bash
-export GITHUB_REPOSITORY=owner/repository
-export GITHUB_TOKEN=ghp_xxx
-export DEPLOYMENT_WORKFLOW_NAME=deploy.yml
+```text
+#detrudr-alerts-demo
 ```
 
-Without GitHub credentials, the exporter emits fallback data so the dashboard remains usable.
+Alerts include severity, affected service/host, current value, Grafana dashboard link, runbook link, and firing/resolved status.
 
-## Game Day
+## Reliability documentation
 
-Game Day instructions are in [docs/gameday.md](docs/gameday.md).
+- [SLIs, SLOs, and error budgets](docs/sli-slo-error-budget.md)
+- [Error budget policy](docs/error-budget-policy.md)
+- [DORA metrics](docs/dora.md)
+- [Game Day](docs/gameday.md)
+- [Toil](docs/toil.md)
+- [Runbooks](runbooks)
 
-Quick commands:
+## Secret safety
 
-```bash
-make gameday-latency
-make gameday-errors
-make gameday-cpu
-```
+Do not commit:
 
-## Team ownership model
+- `terraform/terraform.tfvars`
+- `terraform/.generated/`
+- `terraform/*.tfstate`
+- `.terraform/`
 
-Suggested split for a team task:
-
-- Platform/IaC: Terraform and Docker Compose.
-- Telemetry: Prometheus, Loki, Tempo, OpenTelemetry Collector.
-- Reliability: SLIs, SLOs, error budgets, burn-rate alerts.
-- Dashboards: Grafana provisioning and dashboard JSON.
-- CI/CD observability: GitHub Actions and DORA exporter.
-- Incident response: Alertmanager, Slack templates, runbooks, Game Day validation.
-
-## Validation
-
-Run static validation:
-
-```bash
-make validate
-```
-
-Inspect running services:
-
-```bash
-make ps
-```
+These are ignored by `.gitignore`.

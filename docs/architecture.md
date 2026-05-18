@@ -1,37 +1,47 @@
-# Architecture
+# Bare-Metal Architecture
 
 ## LGTM data flow
 
 ```mermaid
 flowchart LR
-  U[User or Blackbox probe] --> API[trainer-api]
-  API -->|/metrics| P[Prometheus]
-  API -->|OTLP traces| OTel[OpenTelemetry Collector]
-  API -->|JSON stdout logs| Docker[Docker log files]
-  Docker --> OTel
-  OTel -->|logs| Loki[Loki]
-  OTel -->|traces| Tempo[Tempo]
-  NE[Node Exporter] --> P
-  BB[Blackbox Exporter] --> P
-  Dora[DORA Exporter] --> P
-  P --> AM[Alertmanager]
-  AM --> Slack[#DevOps-Alerts]
-  Grafana[Grafana] --> P
+  U[User or Blackbox probe] --> API[trainer-api systemd service]
+  API -->|/metrics on :8080| P[Prometheus]
+  API -->|OTLP traces to :4317| OTel[OpenTelemetry Collector]
+  Journal[journald] -->|systemd service logs| OTel
+  OTel -->|OTLP logs| Loki[Loki :3100]
+  OTel -->|OTLP traces to :4319| Tempo[Tempo :3200]
+  NE[Node Exporter :9100] --> P
+  BB[Blackbox Exporter :9115] --> P
+  Dora[DORA Exporter :9108] --> P
+  P --> AM[Alertmanager :9093]
+  AM --> Slack[#detrudr-alerts-demo]
+  Grafana[Grafana :3000] --> P
   Grafana --> Loki
   Grafana --> Tempo
+```
+
+## Terraform provisioning flow
+
+```mermaid
+flowchart TD
+  TF[terraform apply] --> Render[Render secrets, Grafana config, and systemd units]
+  Render --> Install[Install binaries if install_binaries=true]
+  Install --> Copy[Copy configs to /etc/personal-trainer-observability]
+  Copy --> Venv[Create Python virtualenvs]
+  Venv --> Systemd[systemctl enable --now services]
+  Systemd --> Stack[LGTM stack, exporters, app, DORA exporter]
 ```
 
 ## Reliability pipeline
 
 ```mermaid
 flowchart TD
-  Metrics[Metrics, logs, traces] --> SLIs[Four Golden Signal SLIs]
+  Telemetry[Metrics, logs, traces] --> SLIs[Four Golden Signal SLIs]
   SLIs --> SLOs[SLO targets]
   SLOs --> Budget[Error budget]
-  Budget --> Burn[Burn-rate rules]
-  Burn --> Alerts[Prometheus alerts]
-  Alerts --> Alertmanager[Alertmanager routes and inhibits]
-  Alertmanager --> Slack[Structured Slack payload]
+  Budget --> Burn[Burn-rate alerts]
+  Burn --> AM[Alertmanager routing and inhibition]
+  AM --> Slack[Structured Slack payload]
   Slack --> Runbook[Runbook and escalation]
 ```
 
@@ -46,32 +56,34 @@ sequenceDiagram
   participant Tempo
 
   Engineer->>Grafana: Open Unified Observability dashboard
-  Grafana->>Prometheus: Query latency and error-rate spike
-  Engineer->>Grafana: Select same time range
-  Grafana->>Loki: Query JSON logs with trace_id
-  Engineer->>Grafana: Click trace_id derived field
-  Grafana->>Tempo: Open matching distributed trace
-  Tempo-->>Engineer: Endpoint/span causing latency or error
+  Grafana->>Prometheus: Query latency or error spike
+  Engineer->>Grafana: Select the same time range
+  Grafana->>Loki: Query logs with trace_id
+  Engineer->>Grafana: Click trace_id
+  Grafana->>Tempo: Open matching trace
+  Tempo-->>Engineer: Slow or failing span
 ```
 
-## Deployment topology
+## Filesystem layout
 
-```mermaid
-flowchart TB
-  subgraph Host[Docker host]
-    subgraph Compose[Docker Compose stack]
-      API[trainer-api]
-      P[Prometheus]
-      L[Loki]
-      T[Tempo]
-      G[Grafana]
-      A[Alertmanager]
-      O[OpenTelemetry Collector]
-      N[Node Exporter]
-      B[Blackbox Exporter]
-      D[DORA Exporter]
-    end
-    TF[Terraform]
-  end
-  TF --> Compose
+```text
+/etc/personal-trainer-observability/
+  prometheus/
+  alertmanager/
+  grafana/
+  loki/
+  tempo/
+  otel-collector/
+  blackbox/
+  secrets/
+
+/var/lib/personal-trainer-observability/
+  prometheus/
+  alertmanager/
+  loki/
+  tempo/
+
+/opt/personal-trainer-observability/
+  services/trainer-api/
+  services/dora-exporter/
 ```

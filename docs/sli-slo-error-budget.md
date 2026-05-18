@@ -30,7 +30,7 @@ histogram_quantile(
 
 SLO: 95% of successful requests should complete under 500ms.
 
-Rationale: this is strict enough to expose user-visible slowness while allowing short local-development and container startup variance.
+Rationale: this is strict enough to expose user-visible slowness while allowing short local-development and service startup variance.
 
 ### Traffic
 
@@ -85,7 +85,7 @@ Rationale: saturation is a leading indicator; it predicts reliability loss befor
 ## Availability SLO
 
 ```promql
-avg_over_time(probe_success{instance="http://trainer-api:8080/health"}[30d])
+avg_over_time(probe_success{instance="http://127.0.0.1:8080/health"}[30d])
 ```
 
 Target: 99.5% of probes return success over 30 days.

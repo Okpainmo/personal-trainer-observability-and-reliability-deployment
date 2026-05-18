@@ -1,1 +1,7 @@
 slack_webhook_url = "https://hooks.slack.com/services/REPLACE/ME"
+grafana_admin_user = "admin"
+grafana_admin_password = "admin"
+github_repository = "owner/repository"
+github_token = ""
+deployment_workflow_name = "deploy.yml"
+install_binaries = true

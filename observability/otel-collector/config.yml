@@ -6,26 +6,17 @@ receivers:
       http:
         endpoint: 0.0.0.0:4318
 
-  filelog:
-    include:
-      - /var/lib/docker/containers/*/*-json.log
-    start_at: end
-    include_file_path: true
-    operators:
-      - type: json_parser
-        parse_from: body
-      - type: move
-        from: attributes.log
-        to: body
-      - type: json_parser
-        parse_from: body
-        if: 'body matches "^\\{"'
-      - type: regex_parser
-        parse_from: attributes.file_path
-        regex: '^.*/(?P<container_id>[a-f0-9]{64})/.*$'
-      - type: add
-        field: attributes.source
-        value: docker
+  journald:
+    directory: /var/log/journal
+    units:
+      - trainer-api.service
+      - dora-exporter.service
+      - prometheus.service
+      - alertmanager.service
+      - loki.service
+      - tempo.service
+      - grafana-server.service
+    priority: info
 
 processors:
   batch:
@@ -40,12 +31,12 @@ processors:
 
 exporters:
   otlp/tempo:
-    endpoint: tempo:4317
+    endpoint: 127.0.0.1:4319
     tls:
       insecure: true
 
   otlphttp/loki:
-    endpoint: http://loki:3100/otlp
+    endpoint: http://127.0.0.1:3100/otlp
 
   prometheus:
     endpoint: 0.0.0.0:8889
@@ -63,6 +54,6 @@ service:
       processors: [resource, batch]
       exporters: [otlp/tempo]
     logs:
-      receivers: [filelog]
+      receivers: [journald]
       processors: [resource, batch]
       exporters: [otlphttp/loki]

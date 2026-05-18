@@ -1,67 +1,22 @@
-# Personal Trainer Observability Platform - Intern Onboarding Guide
+# Bare-Metal Observability Platform - Intern Onboarding Guide
 
-## Purpose of this platform
+## What this platform does
 
-This repository runs a complete observability and reliability platform for the `trainer-api` service.
+This repo runs a full observability and reliability platform on a Linux host without Docker. Terraform installs/configures systemd services for Prometheus, Loki, Tempo, Grafana, Alertmanager, exporters, OpenTelemetry Collector, the demo API, and the DORA exporter.
 
-The goal is not only to know whether a container is up. The goal is to understand whether users are getting a reliable service, how deployments affect reliability, and how engineers move from a symptom to the root cause.
+The main goal is to move from "something is wrong" to "this endpoint/span/log line caused it" quickly.
 
-The platform uses the LGTM stack:
-
-- Loki for logs.
-- Grafana for dashboards and exploration.
-- Tempo for distributed traces.
-- Prometheus for metrics and alert rules.
-
-Supporting services:
-
-- Alertmanager routes alerts to Slack.
-- Node Exporter exposes host CPU, memory, disk, network, and load metrics.
-- Blackbox Exporter probes service availability, HTTP latency, and SSL expiry.
-- OpenTelemetry Collector receives traces and ships logs.
-- DORA Exporter exposes delivery metrics from GitHub Actions or local fallback data.
-- `trainer-api` is the demo service that emits metrics, logs, and traces.
-
-## Architecture overview
+## How the services work together
 
 ```text
-User / curl / Blackbox probe
-        |
-        v
-  trainer-api
-    |       |       |
-    |       |       +--> JSON logs with trace_id
-    |       +----------> OTLP traces
-    +------------------> /metrics
-
-Prometheus <--- app metrics, Node Exporter, Blackbox Exporter, DORA Exporter
-Prometheus ---> Alertmanager ---> Slack #detrudr-alerts-demo
-
-OpenTelemetry Collector ---> Loki  (logs)
-OpenTelemetry Collector ---> Tempo (traces)
-
-Grafana queries Prometheus, Loki, and Tempo from one interface.
+trainer-api -> metrics -> Prometheus
+trainer-api -> traces -> OpenTelemetry Collector -> Tempo
+systemd journals -> OpenTelemetry Collector -> Loki
+Prometheus alerts -> Alertmanager -> Slack #detrudr-alerts-demo
+Grafana -> Prometheus + Loki + Tempo
 ```
 
-## Reliability drill-down flow
-
-```text
-Metric spike in Grafana
-        |
-        v
-Open matching time range in Loki logs
-        |
-        v
-Click trace_id from the log line
-        |
-        v
-Open the exact Tempo trace
-        |
-        v
-Identify endpoint, span, delay, or error source
-```
-
-## Service URLs
+## Important URLs
 
 - Grafana: http://localhost:3000
 - Prometheus: http://localhost:9090
@@ -73,296 +28,173 @@ Identify endpoint, span, delay, or error source
 - Blackbox Exporter: http://localhost:9115
 - DORA Exporter: http://localhost:9108
 
-Important: Loki and Tempo are backend APIs, not normal browser UIs. Opening `http://localhost:3100` or `http://localhost:3200` may show `404 page not found`. Use them from Grafana Explore instead.
+Loki and Tempo are API backends. A browser 404 at `/` is normal. Use Grafana Explore.
 
-## Starting the platform
-
-From the repository root:
+## Deploying
 
 ```bash
 cp terraform/terraform.tfvars.example terraform/terraform.tfvars
 ```
 
-Put the Slack webhook in `terraform/terraform.tfvars`:
+Edit `terraform/terraform.tfvars` and set the Slack webhook, Grafana password, and optional GitHub credentials.
 
-```hcl
-slack_webhook_url = "https://hooks.slack.com/services/..."
-```
-
-Start everything:
+Deploy:
 
 ```bash
 make up
 ```
 
-Equivalent Terraform commands:
+Destroy local services and install directories:
 
 ```bash
-terraform -chdir=terraform init
-terraform -chdir=terraform apply -auto-approve
+make down
 ```
 
 ## Useful CLI commands
 
-Show all containers:
+Show service status:
 
 ```bash
-docker compose -f docker-compose.yml ps
+make status
 ```
 
-Follow all logs:
+Follow logs for the full stack:
 
 ```bash
-docker compose -f docker-compose.yml logs -f --tail=100
+make logs
 ```
 
-Follow one service log:
+Restart the full stack:
 
 ```bash
-docker compose -f docker-compose.yml logs -f --tail=100 trainer-api
-docker compose -f docker-compose.yml logs -f --tail=100 otel-collector
-docker compose -f docker-compose.yml logs -f --tail=100 prometheus
-docker compose -f docker-compose.yml logs -f --tail=100 alertmanager
+make restart
 ```
 
-Restart one service:
+Run health checks:
 
 ```bash
-docker compose -f docker-compose.yml restart trainer-api
+make health
 ```
 
-Restart the full stack through Terraform:
+Inspect one service:
 
 ```bash
-terraform -chdir=terraform apply -auto-approve
+systemctl status trainer-api --no-pager
+journalctl -u trainer-api -f
 ```
 
-Stop services without deleting data:
-
-```bash
-docker compose -f docker-compose.yml down --remove-orphans
-```
-
-Stop services and delete stored observability data:
-
-```bash
-docker compose -f docker-compose.yml down --volumes --remove-orphans
-```
-
-Validate Compose:
-
-```bash
-docker compose -f docker-compose.yml config
-```
-
-Validate application health from inside the container:
-
-```bash
-docker compose -f docker-compose.yml exec -T trainer-api python -c 'import urllib.request; print(urllib.request.urlopen("http://localhost:8080/health", timeout=3).read().decode())'
-```
-
-Generate normal API traffic:
+Generate normal traffic:
 
 ```bash
 curl http://localhost:8080/workout
 ```
 
-Generate slow requests:
+Generate slow traffic:
 
 ```bash
 curl "http://localhost:8080/workout?delay_ms=1200"
 ```
 
-Generate errors:
+Generate an error:
 
 ```bash
 curl "http://localhost:8080/workout?fail=true"
 ```
 
-Run Game Day helpers:
+## Grafana
 
-```bash
-make gameday-latency
-make gameday-errors
-make gameday-cpu
-```
-
-Check backend health endpoints:
-
-```bash
-curl http://localhost:3100/ready
-curl http://localhost:3100/metrics
-curl http://localhost:3200/ready
-curl http://localhost:3200/metrics
-curl http://localhost:9090/-/healthy
-```
-
-## Grafana login
-
-Open:
+Open Grafana:
 
 ```text
 http://localhost:3000
 ```
 
-Default credentials:
+Use the credentials from `terraform/terraform.tfvars`.
 
-```text
-username: admin
-password: admin
-```
+Grafana has three datasource types:
 
-If credentials were changed, check `.env` or the environment values used by Docker Compose.
+- Prometheus for metrics.
+- Loki for logs.
+- Tempo for traces.
 
-## Grafana Explore
+## Dashboard: Unified Observability
 
-Grafana Explore is for ad-hoc investigation.
-
-Use Prometheus Explore when asking metric questions:
-
-- Is request rate increasing?
-- Is error rate above normal?
-- Is CPU high?
-- Are Prometheus targets up?
-
-Use Loki Explore when asking log questions:
-
-- What did the service log during the incident?
-- Are there error messages?
-- Which log line has the trace ID?
-
-Use Tempo Explore when asking trace questions:
-
-- Which endpoint was slow?
-- Which span took the longest?
-- Did the request fail?
-
-## Dashboard 1: Unified Observability
-
-This is the most important dashboard.
-
-Use it when a service seems slow, broken, or noisy.
+Use this first during incidents.
 
 Panels:
 
-- Request Rate: shows traffic by route and status code.
-- Error Rate: shows the ratio of 5xx responses.
-- Latency p50/p95/p99: shows request duration percentiles.
-- Correlated Logs: shows Loki logs from `trainer-api`.
-- Recent Traces: shows Tempo traces.
+- Request Rate
+- Error Rate
+- Latency p50/p95/p99
+- Correlated Loki logs
+- Recent Tempo traces
 
-How to use it:
+Workflow:
 
-1. Generate traffic with `curl http://localhost:8080/workout`.
-2. Generate latency with `curl "http://localhost:8080/workout?delay_ms=1200"`.
-3. Open the Unified Observability dashboard.
-4. Look for a latency spike.
-5. Open the logs panel for the same time range.
-6. Find a log line with `trace_id`.
-7. Click the `trace_id` link.
-8. Grafana opens the matching Tempo trace.
-9. Inspect spans to identify the slow operation.
+1. Find a metric spike.
+2. Keep the same time range.
+3. Inspect Loki logs.
+4. Click the `trace_id`.
+5. Inspect the Tempo trace and identify the slow/failing span.
 
-This dashboard proves the platform goes beyond simple up/down monitoring.
+## Dashboard: SLO & Error Budget
 
-## Dashboard 2: SLO & Error Budget
-
-Use this dashboard to know whether the service is meeting reliability promises.
+Use this to answer: are we meeting our reliability promise?
 
 Panels:
 
-- Availability SLI 30d: percentage of successful health probes.
-- Latency SLI p95: successful request p95 latency.
-- Success SLI 5m: percentage of non-5xx requests.
-- Error Budget Remaining: how much allowed unreliability remains.
-- Burn Rate Fast / Slow: how quickly the error budget is being consumed.
-- SLO Compliance 7d / 30d: short and longer-term availability.
+- Availability SLI
+- Latency SLI
+- Success SLI
+- Error budget remaining
+- Fast and slow burn rate
+- 7-day and 30-day compliance
 
-Key idea:
+If burn rate rises, move to the Unified Observability dashboard and follow `runbooks/slo-burn.md`.
 
-An SLI is the measurement. An SLO is the target. The error budget is the allowed failure.
+## Dashboard: DORA Metrics
 
-Example:
-
-```text
-99.5% availability over 30 days allows 0.5% failure.
-30 days = 720 hours.
-0.5% of 720 hours = 3.6 hours allowed failure.
-```
-
-How to use it:
-
-1. Check whether SLI values are above their SLO targets.
-2. Check whether error budget remaining is healthy.
-3. If burn rate rises, open Unified Observability.
-4. Use logs and traces to identify the cause.
-5. Follow the `runbooks/slo-burn.md` guidance if an alert fires.
-
-## Dashboard 3: DORA Metrics
-
-Use this dashboard to understand delivery performance.
+Use this to understand delivery performance.
 
 Panels:
 
-- Deployment Frequency: how often successful deployments happen.
-- DORA Classification: Elite, High, Medium, or Low.
-- Lead Time for Changes: time from commit to deployment.
-- Change Failure Rate: percentage of deployments that fail or require recovery.
-- Deployment Outcomes: success/failure/cancelled deployment counts.
-- MTTR: average time to restore service after incidents.
-- Lead Time Trend: change delivery speed over time.
+- Deployment Frequency
+- DORA classification
+- Lead Time for Changes
+- Change Failure Rate
+- Deployment outcomes
+- MTTR
 
-How to use it:
+Live GitHub Actions data requires `github_repository`, `github_token`, and `deployment_workflow_name` in Terraform variables. Without them, the exporter emits fallback demo data.
 
-1. Set `GITHUB_REPOSITORY`, `GITHUB_TOKEN`, and `DEPLOYMENT_WORKFLOW_NAME` for live GitHub Actions metrics.
-2. Trigger normal deploy workflow from GitHub Actions.
-3. Trigger failing workflow when testing the Game Day deployment failure scenario.
-4. Watch deployment counts and change failure rate update.
-5. Investigate alerts when CFR exceeds the threshold.
+## Dashboard: Node Exporter
 
-If GitHub credentials are not set, the DORA exporter emits fallback metrics so the dashboard still loads for demos.
-
-## Dashboard 4: Node Exporter
-
-Use this dashboard for host-level infrastructure health.
+Use this for host health.
 
 Panels:
 
-- CPU Usage: total host CPU.
-- CPU Per Core: per-core CPU pressure.
-- Memory Used/Cached/Available: memory pressure and available memory.
-- Disk I/O: read and write throughput.
-- Network I/O: receive and transmit throughput.
-- Load Average: 1m, 5m, and 15m system load.
+- CPU total and per-core
+- Memory used/cached/available
+- Disk I/O
+- Network I/O
+- Load averages
 
-How to use it:
+If CPU or memory alerts fire, compare this dashboard with latency/error panels in Unified Observability.
 
-1. Open this dashboard when CPU, memory, or disk alerts fire.
-2. Compare resource pressure with request latency and error rate.
-3. Use `docker stats` to identify the container causing pressure.
-4. If the host is unreachable, Alertmanager inhibition should reduce noisy node alerts.
+## Dashboard: Blackbox Exporter
 
-## Dashboard 5: Blackbox Exporter
-
-Use this dashboard for user-facing availability.
+Use this for user-facing availability.
 
 Panels:
 
-- Uptime / Downtime: timeline of probe success and failure.
-- HTTP Response Time p50/p90/p99: external probe latency.
-- SSL Expiration Days: certificate expiry countdown.
-- Probe Success Rate 30d: availability from the probe perspective.
+- Uptime/downtime timeline
+- HTTP response time p50/p90/p99
+- SSL expiration days
+- Probe success rate
 
-How to use it:
-
-1. Check this dashboard when users report the service is unreachable.
-2. Confirm whether the health endpoint is failing.
-3. Compare probe failure time with deployment time in the DORA dashboard.
-4. If probe failure lasts two minutes, `InstanceDown` should fire.
+This tells whether the service works from an external probe point of view, not just whether the process is running.
 
 ## Prometheus
-
-Prometheus is the metrics database and alert rule engine.
 
 Open:
 
@@ -372,209 +204,86 @@ http://localhost:9090
 
 Useful pages:
 
-- `/targets`: shows scrape target health.
-- `/alerts`: shows alert rule state.
-- `/graph`: lets you run PromQL manually.
+- `/targets`
+- `/alerts`
+- `/graph`
 
 Useful PromQL:
 
 ```promql
 up
-```
-
-```promql
 sum(rate(http_requests_total[5m])) by (route, status)
-```
-
-```promql
 sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m]))
-```
-
-```promql
 histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, route))
-```
-
-```promql
-100 * (1 - avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])))
 ```
 
 ## Loki
 
-Loki stores logs.
+Use Loki from Grafana Explore.
 
-Use it from Grafana Explore, not directly from the browser root URL.
-
-Example Loki query:
+Queries:
 
 ```logql
 {service_name="trainer-api"}
-```
-
-Parse JSON logs:
-
-```logql
 {service_name="trainer-api"} | json
-```
-
-Find logs with trace IDs:
-
-```logql
 {service_name="trainer-api"} | json | trace_id != ""
-```
-
-Find errors:
-
-```logql
-{service_name="trainer-api"} | json | levelname="ERROR"
 ```
 
 ## Tempo
 
-Tempo stores traces.
+Use Tempo from Grafana Explore or by clicking a `trace_id` in Loki logs.
 
-Use it from Grafana Explore or from clickable trace IDs in Loki logs.
-
-Example TraceQL:
+TraceQL:
 
 ```traceql
 { resource.service.name = "trainer-api" }
 ```
 
-How to use traces:
-
-1. Generate a request.
-2. Open Grafana Explore.
-3. Select Tempo.
-4. Search for traces from `trainer-api`.
-5. Open a trace and inspect spans.
-6. For latency tests, look for the `build_workout_plan` span.
-
 ## Alertmanager and Slack
 
-Alertmanager receives alerts from Prometheus and sends structured messages to Slack.
-
-Current Slack channel:
+Alertmanager receives alerts from Prometheus and sends structured payloads to:
 
 ```text
 #detrudr-alerts-demo
 ```
 
-Open Alertmanager:
+Every alert should include:
 
-```text
-http://localhost:9093
-```
-
-Alert messages include:
-
-- alert name
+- name
 - severity
-- service
-- host or instance
+- service/instance
 - current value
 - dashboard link
 - runbook link
-- firing or resolved status
-
-Important config files:
-
-- `observability/prometheus/rules/infrastructure.yml`
-- `observability/prometheus/rules/slo-burn.yml`
-- `observability/prometheus/rules/dora.yml`
-- `observability/alertmanager/alertmanager.yml`
-- `observability/alertmanager/templates/slack.tmpl`
+- firing/resolved status
 
 ## Runbooks
 
 Runbooks live in `runbooks/`.
 
-Use runbooks when alerts fire.
+Start with the runbook linked in the Slack alert. If no alert is firing but the service looks degraded, start with `runbooks/slo-burn.md` or `runbooks/instance-down.md`.
 
-Current runbooks:
+## Practice flow for a new intern
 
-- `runbooks/cpu.md`
-- `runbooks/memory.md`
-- `runbooks/disk.md`
-- `runbooks/instance-down.md`
-- `runbooks/slo-burn.md`
-- `runbooks/change-failure-rate.md`
-- `runbooks/mttr.md`
-
-Every runbook explains:
-
-- what the alert means
-- likely causes
-- first investigation steps
-- resolution steps
-- rollback guidance
-- escalation path
-
-## Common troubleshooting
-
-If Terraform says "No changes" but containers are not running:
-
-```bash
-terraform -chdir=terraform apply -auto-approve
-```
-
-The Terraform resource is configured to re-run Compose on each apply.
-
-If a container keeps restarting:
-
-```bash
-docker compose -f docker-compose.yml ps
-docker compose -f docker-compose.yml logs --tail=120 SERVICE_NAME
-```
-
-If Loki or Tempo returns 404 in the browser:
-
-That is normal at the root path. Use Grafana Explore.
-
-If Grafana dashboards are missing:
-
-```bash
-docker compose -f docker-compose.yml restart grafana
-docker compose -f docker-compose.yml logs --tail=100 grafana
-```
-
-If Slack alerts do not arrive:
-
-1. Confirm `terraform/terraform.tfvars` contains the correct webhook.
-2. Confirm Alertmanager is running.
-3. Open `http://localhost:9093`.
-4. Check Alertmanager logs.
-5. Confirm the webhook app can post to `#detrudr-alerts-demo`.
-
-If Prometheus targets are down:
-
-1. Open `http://localhost:9090/targets`.
-2. Find the failed job.
-3. Check the matching container with `docker compose ps`.
-4. Read that container's logs.
-
-## What a junior intern should practice first
-
-1. Start the stack with `make up`.
+1. Run `make up`.
 2. Open Grafana.
-3. Generate normal traffic with `/workout`.
-4. Generate latency with `delay_ms=1200`.
-5. Watch latency rise in Unified Observability.
-6. Open Loki logs for the same time window.
-7. Click a `trace_id` into Tempo.
-8. Open Prometheus targets and alerts pages.
-9. Trigger an error with `fail=true`.
-10. Read the SLO burn runbook and explain what would happen if the error continued.
+3. Run `curl http://localhost:8080/workout`.
+4. Run `curl "http://localhost:8080/workout?delay_ms=1200"`.
+5. Open Unified Observability and find the latency spike.
+6. Open Loki logs for the same time range.
+7. Click a `trace_id`.
+8. Inspect the Tempo trace.
+9. Open Prometheus `/targets`.
+10. Read the SLO dashboard and explain the error budget.
 
 ## Mental model
 
 Prometheus tells you what changed.
 
-Loki tells you what the service said.
+Loki tells you what the services said.
 
-Tempo tells you where time was spent.
+Tempo tells you where request time was spent.
 
-Grafana brings the three views together.
+Grafana brings everything together.
 
-Alertmanager turns reliability problems into actionable Slack notifications.
-
-Runbooks tell the responder what to do next.
+Alertmanager gets the right information into Slack.
