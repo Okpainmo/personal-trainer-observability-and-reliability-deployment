@@ -12,6 +12,7 @@ GRAFANA_VERSION="${GRAFANA_VERSION:-11.2.0}"
 
 BIN_DIR="${BIN_DIR:-/usr/local/bin}"
 WORK_DIR="${WORK_DIR:-/var/tmp/personal-trainer-observability-install}"
+TMPDIR="${TMPDIR:-$WORK_DIR/tmp}"
 MIN_FREE_MB="${MIN_FREE_MB:-1024}"
 
 arch="$(uname -m)"
@@ -22,8 +23,9 @@ case "$arch" in
 esac
 
 sudo mkdir -p "$BIN_DIR"
-mkdir -p "$WORK_DIR"
-sudo chown "$(id -u):$(id -g)" "$WORK_DIR"
+mkdir -p "$WORK_DIR" "$TMPDIR"
+sudo chown "$(id -u):$(id -g)" "$WORK_DIR" "$TMPDIR"
+export TMPDIR
 
 require_free_space() {
   local path="$1"
@@ -47,12 +49,12 @@ if command -v apt-get >/dev/null 2>&1; then
     echo "after freeing disk space, repair apt with: sudo apt-get install --reinstall gpgv gnupg ca-certificates" >&2
     exit 1
   fi
-  sudo apt-get update
-  sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+  sudo env TMPDIR="$TMPDIR" apt-get update
+  sudo env TMPDIR="$TMPDIR" DEBIAN_FRONTEND=noninteractive apt-get install -y \
     ca-certificates curl tar unzip rsync python3 python3-venv python3-pip systemd stress-ng
 elif command -v yum >/dev/null 2>&1; then
   package_manager="yum"
-  sudo yum install -y ca-certificates curl tar unzip rsync python3 python3-pip systemd stress-ng
+  sudo env TMPDIR="$TMPDIR" yum install -y ca-certificates curl tar unzip rsync python3 python3-pip systemd stress-ng
 else
   echo "install curl, tar, unzip, rsync, python3, python3-venv, and systemd before running Terraform" >&2
   exit 1
@@ -142,13 +144,13 @@ if ! command -v grafana-server >/dev/null 2>&1; then
     grafana_deb="$WORK_DIR/grafana_${GRAFANA_VERSION}_${deb_arch}.deb"
     echo "Installing grafana-server $GRAFANA_VERSION"
     download "https://dl.grafana.com/oss/release/grafana_${GRAFANA_VERSION}_${deb_arch}.deb" "$grafana_deb"
-    sudo dpkg -i "$grafana_deb" || sudo apt-get install -f -y
+    sudo env TMPDIR="$TMPDIR" dpkg -i "$grafana_deb" || sudo env TMPDIR="$TMPDIR" apt-get install -f -y
   else
     rpm_arch="$go_arch"
     grafana_rpm="$WORK_DIR/grafana-${GRAFANA_VERSION}-1.${rpm_arch}.rpm"
     echo "Installing grafana-server $GRAFANA_VERSION"
     download "https://dl.grafana.com/oss/release/grafana-${GRAFANA_VERSION}-1.${rpm_arch}.rpm" "$grafana_rpm"
-    sudo yum install -y "$grafana_rpm"
+    sudo env TMPDIR="$TMPDIR" yum install -y "$grafana_rpm"
   fi
 else
   echo "grafana-server already installed"
