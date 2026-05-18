@@ -12,6 +12,7 @@ GRAFANA_VERSION="${GRAFANA_VERSION:-11.2.0}"
 
 BIN_DIR="${BIN_DIR:-/usr/local/bin}"
 WORK_DIR="${WORK_DIR:-/tmp/personal-trainer-observability-install}"
+MIN_FREE_MB="${MIN_FREE_MB:-1024}"
 
 arch="$(uname -m)"
 case "$arch" in
@@ -24,9 +25,28 @@ sudo mkdir -p "$BIN_DIR"
 mkdir -p "$WORK_DIR"
 sudo chown "$(id -u):$(id -g)" "$WORK_DIR"
 
+require_free_space() {
+  local path="$1"
+  local available_mb
+  available_mb="$(df -Pm "$path" | awk 'NR==2 {print $4}')"
+  if [ "${available_mb:-0}" -lt "$MIN_FREE_MB" ]; then
+    echo "not enough free space on $(df -P "$path" | awk 'NR==2 {print $6}'): ${available_mb}MB available, ${MIN_FREE_MB}MB required" >&2
+    echo "free space with: sudo apt-get clean; sudo journalctl --vacuum-time=2d; df -h" >&2
+    exit 1
+  fi
+}
+
+require_free_space /
+require_free_space "$WORK_DIR"
+
 package_manager=""
 if command -v apt-get >/dev/null 2>&1; then
   package_manager="apt"
+  if ! command -v gpgv >/dev/null 2>&1; then
+    echo "gpgv is required for apt repository signature verification but is not installed or not in PATH" >&2
+    echo "after freeing disk space, repair apt with: sudo apt-get install --reinstall gpgv gnupg ca-certificates" >&2
+    exit 1
+  fi
   sudo apt-get update
   sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
     ca-certificates curl tar unzip rsync python3 python3-venv python3-pip systemd stress-ng
