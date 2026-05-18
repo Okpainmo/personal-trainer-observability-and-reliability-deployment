@@ -1,0 +1,17 @@
+{
+  "uid": "node-exporter",
+  "title": "Node Exporter",
+  "tags": ["node", "infrastructure"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "panels": [
+    {"type": "timeseries", "title": "CPU Usage %", "gridPos": {"x": 0, "y": 0, "w": 12, "h": 8}, "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "100 * (1 - avg by(instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])))", "legendFormat": "{{instance}}"}]},
+    {"type": "timeseries", "title": "CPU Per Core %", "gridPos": {"x": 12, "y": 0, "w": 12, "h": 8}, "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "100 * (1 - rate(node_cpu_seconds_total{mode=\"idle\"}[5m]))", "legendFormat": "cpu {{cpu}} {{instance}}"}]},
+    {"type": "timeseries", "title": "Memory Used/Cached/Available", "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8}, "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes", "legendFormat": "used"}, {"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "node_memory_Cached_bytes", "legendFormat": "cached"}, {"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "node_memory_MemAvailable_bytes", "legendFormat": "available"}]},
+    {"type": "timeseries", "title": "Disk I/O", "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8}, "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "rate(node_disk_read_bytes_total[5m])", "legendFormat": "read {{device}}"}, {"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "rate(node_disk_written_bytes_total[5m])", "legendFormat": "write {{device}}"}]},
+    {"type": "timeseries", "title": "Network I/O", "gridPos": {"x": 0, "y": 16, "w": 12, "h": 8}, "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "rate(node_network_receive_bytes_total{device!=\"lo\"}[5m])", "legendFormat": "rx {{device}}"}, {"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "rate(node_network_transmit_bytes_total{device!=\"lo\"}[5m])", "legendFormat": "tx {{device}}"}]},
+    {"type": "timeseries", "title": "Load Average", "gridPos": {"x": 12, "y": 16, "w": 12, "h": 8}, "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "node_load1", "legendFormat": "1m"}, {"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "node_load5", "legendFormat": "5m"}, {"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "node_load15", "legendFormat": "15m"}]}
+  ]
+}

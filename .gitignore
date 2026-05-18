@@ -1,0 +1,13 @@
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform/.env
+terraform/.generated/
+terraform/*.tfvars
+!terraform/*.tfvars.example
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+data/
+*.log

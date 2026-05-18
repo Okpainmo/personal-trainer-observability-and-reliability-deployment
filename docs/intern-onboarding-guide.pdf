@@ -1,0 +1,496 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+2 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>
+endobj
+4 0 obj
+<< /Length 2575 >>
+stream
+BT /F2 18 Tf 54 776 Td (Personal Trainer Observability Platform - Intern ) Tj ET
+BT /F2 18 Tf 54 762 Td (Onboarding Guide) Tj ET
+BT /F2 14 Tf 54 726 Td (Purpose of this platform) Tj ET
+BT /F1 10 Tf 54 696 Td (This repository runs a complete observability and reliability platform for the `trainer-) Tj ET
+BT /F1 10 Tf 54 682 Td (api` service.) Tj ET
+BT /F1 10 Tf 54 652 Td (The goal is not only to know whether a container is up. The goal is to understand ) Tj ET
+BT /F1 10 Tf 54 638 Td (whether users are getting a reliable service, how deployments affect reliability, and ) Tj ET
+BT /F1 10 Tf 54 624 Td (how engineers move from a symptom to the root cause.) Tj ET
+BT /F1 10 Tf 54 594 Td (The platform uses the LGTM stack:) Tj ET
+BT /F1 10 Tf 54 564 Td (- Loki for logs.) Tj ET
+BT /F1 10 Tf 54 550 Td (- Grafana for dashboards and exploration.) Tj ET
+BT /F1 10 Tf 54 536 Td (- Tempo for distributed traces.) Tj ET
+BT /F1 10 Tf 54 522 Td (- Prometheus for metrics and alert rules.) Tj ET
+BT /F1 10 Tf 54 492 Td (Supporting services:) Tj ET
+BT /F1 10 Tf 54 462 Td (- Alertmanager routes alerts to Slack.) Tj ET
+BT /F1 10 Tf 54 448 Td (- Node Exporter exposes host CPU, memory, disk, network, and load metrics.) Tj ET
+BT /F1 10 Tf 54 434 Td (- Blackbox Exporter probes service availability, HTTP latency, and SSL expiry.) Tj ET
+BT /F1 10 Tf 54 420 Td (- OpenTelemetry Collector receives traces and ships logs.) Tj ET
+BT /F1 10 Tf 54 406 Td (- DORA Exporter exposes delivery metrics from GitHub Actions or local fallback data.) Tj ET
+BT /F1 10 Tf 54 392 Td (- `trainer-api` is the demo service that emits metrics, logs, and traces.) Tj ET
+BT /F2 14 Tf 54 356 Td (Architecture overview) Tj ET
+BT /F3 9 Tf 62 310 Td (User / curl / Blackbox probe) Tj ET
+BT /F3 9 Tf 62 296 Td (        |) Tj ET
+BT /F3 9 Tf 62 282 Td (        v) Tj ET
+BT /F3 9 Tf 62 268 Td (  trainer-api) Tj ET
+BT /F3 9 Tf 62 254 Td (    |       |       |) Tj ET
+BT /F3 9 Tf 62 240 Td (    |       |       +--> JSON logs with trace_id) Tj ET
+BT /F3 9 Tf 62 226 Td (    |       +----------> OTLP traces) Tj ET
+BT /F3 9 Tf 62 212 Td (    +------------------> /metrics) Tj ET
+BT /F3 9 Tf 62 184 Td (Prometheus <--- app metrics, Node Exporter, Blackbox Exporter, DORA Exporter) Tj ET
+BT /F3 9 Tf 62 170 Td (Prometheus ---> Alertmanager ---> Slack #detrudr-alerts-demo) Tj ET
+BT /F3 9 Tf 62 142 Td (OpenTelemetry Collector ---> Loki  \(logs\)) Tj ET
+BT /F3 9 Tf 62 128 Td (OpenTelemetry Collector ---> Tempo \(traces\)) Tj ET
+BT /F3 9 Tf 62 100 Td (Grafana queries Prometheus, Loki, and Tempo from one interface.) Tj ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 30 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 4 0 R >>
+endobj
+6 0 obj
+<< /Length 2026 >>
+stream
+BT /F2 14 Tf 54 762 Td (Reliability drill-down flow) Tj ET
+BT /F3 9 Tf 62 716 Td (Metric spike in Grafana) Tj ET
+BT /F3 9 Tf 62 702 Td (        |) Tj ET
+BT /F3 9 Tf 62 688 Td (        v) Tj ET
+BT /F3 9 Tf 62 674 Td (Open matching time range in Loki logs) Tj ET
+BT /F3 9 Tf 62 660 Td (        |) Tj ET
+BT /F3 9 Tf 62 646 Td (        v) Tj ET
+BT /F3 9 Tf 62 632 Td (Click trace_id from the log line) Tj ET
+BT /F3 9 Tf 62 618 Td (        |) Tj ET
+BT /F3 9 Tf 62 604 Td (        v) Tj ET
+BT /F3 9 Tf 62 590 Td (Open the exact Tempo trace) Tj ET
+BT /F3 9 Tf 62 576 Td (        |) Tj ET
+BT /F3 9 Tf 62 562 Td (        v) Tj ET
+BT /F3 9 Tf 62 548 Td (Identify endpoint, span, delay, or error source) Tj ET
+BT /F2 14 Tf 54 496 Td (Service URLs) Tj ET
+BT /F1 10 Tf 54 466 Td (- Grafana: http://localhost:3000) Tj ET
+BT /F1 10 Tf 54 452 Td (- Prometheus: http://localhost:9090) Tj ET
+BT /F1 10 Tf 54 438 Td (- Alertmanager: http://localhost:9093) Tj ET
+BT /F1 10 Tf 54 424 Td (- Trainer API: http://localhost:8080) Tj ET
+BT /F1 10 Tf 54 410 Td (- Loki API: http://localhost:3100) Tj ET
+BT /F1 10 Tf 54 396 Td (- Tempo API: http://localhost:3200) Tj ET
+BT /F1 10 Tf 54 382 Td (- Node Exporter: http://localhost:9100) Tj ET
+BT /F1 10 Tf 54 368 Td (- Blackbox Exporter: http://localhost:9115) Tj ET
+BT /F1 10 Tf 54 354 Td (- DORA Exporter: http://localhost:9108) Tj ET
+BT /F1 10 Tf 54 324 Td (Important: Loki and Tempo are backend APIs, not normal browser UIs. Opening ) Tj ET
+BT /F1 10 Tf 54 310 Td (`http://localhost:3100` or `http://localhost:3200` may show `404 page not found`. Use ) Tj ET
+BT /F1 10 Tf 54 296 Td (them from Grafana Explore instead.) Tj ET
+BT /F2 14 Tf 54 260 Td (Starting the platform) Tj ET
+BT /F1 10 Tf 54 230 Td (From the repository root:) Tj ET
+BT /F3 9 Tf 62 184 Td (cp terraform/terraform.tfvars.example terraform/terraform.tfvars) Tj ET
+BT /F1 10 Tf 54 138 Td (Put the Slack webhook in `terraform/terraform.tfvars`:) Tj ET
+BT /F3 9 Tf 62 92 Td (slack_webhook_url = "https://hooks.slack.com/services/...") Tj ET
+endstream
+endobj
+7 0 obj
+<< /Type /Page /Parent 30 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 6 0 R >>
+endobj
+8 0 obj
+<< /Length 1332 >>
+stream
+BT /F1 10 Tf 54 768 Td (Start everything:) Tj ET
+BT /F3 9 Tf 62 722 Td (make up) Tj ET
+BT /F1 10 Tf 54 676 Td (Equivalent Terraform commands:) Tj ET
+BT /F3 9 Tf 62 630 Td (terraform -chdir=terraform init) Tj ET
+BT /F3 9 Tf 62 616 Td (terraform -chdir=terraform apply -auto-approve) Tj ET
+BT /F2 14 Tf 54 564 Td (Useful CLI commands) Tj ET
+BT /F1 10 Tf 54 534 Td (Show all containers:) Tj ET
+BT /F3 9 Tf 62 488 Td (docker compose -f docker-compose.yml ps) Tj ET
+BT /F1 10 Tf 54 442 Td (Follow all logs:) Tj ET
+BT /F3 9 Tf 62 396 Td (docker compose -f docker-compose.yml logs -f --tail=100) Tj ET
+BT /F1 10 Tf 54 350 Td (Follow one service log:) Tj ET
+BT /F3 9 Tf 62 304 Td (docker compose -f docker-compose.yml logs -f --tail=100 trainer-api) Tj ET
+BT /F3 9 Tf 62 290 Td (docker compose -f docker-compose.yml logs -f --tail=100 otel-collector) Tj ET
+BT /F3 9 Tf 62 276 Td (docker compose -f docker-compose.yml logs -f --tail=100 prometheus) Tj ET
+BT /F3 9 Tf 62 262 Td (docker compose -f docker-compose.yml logs -f --tail=100 alertmanager) Tj ET
+BT /F1 10 Tf 54 216 Td (Restart one service:) Tj ET
+BT /F3 9 Tf 62 170 Td (docker compose -f docker-compose.yml restart trainer-api) Tj ET
+BT /F1 10 Tf 54 124 Td (Restart the full stack through Terraform:) Tj ET
+BT /F3 9 Tf 62 78 Td (terraform -chdir=terraform apply -auto-approve) Tj ET
+endstream
+endobj
+9 0 obj
+<< /Type /Page /Parent 30 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 8 0 R >>
+endobj
+10 0 obj
+<< /Length 1235 >>
+stream
+BT /F1 10 Tf 54 752 Td (Stop services without deleting data:) Tj ET
+BT /F3 9 Tf 62 706 Td (docker compose -f docker-compose.yml down --remove-orphans) Tj ET
+BT /F1 10 Tf 54 660 Td (Stop services and delete stored observability data:) Tj ET
+BT /F3 9 Tf 62 614 Td (docker compose -f docker-compose.yml down --volumes --remove-orphans) Tj ET
+BT /F1 10 Tf 54 568 Td (Validate Compose:) Tj ET
+BT /F3 9 Tf 62 522 Td (docker compose -f docker-compose.yml config) Tj ET
+BT /F1 10 Tf 54 476 Td (Validate application health from inside the container:) Tj ET
+BT /F3 9 Tf 62 430 Td (docker compose -f docker-compose.yml exec -T trainer-api python -c 'import urllib.request; ) Tj ET
+BT /F3 9 Tf 62 416 Td (print\(urllib.request.urlopen\("http://localhost:8080/health", timeout=3\).read\(\).decode\(\)\)') Tj ET
+BT /F1 10 Tf 54 370 Td (Generate normal API traffic:) Tj ET
+BT /F3 9 Tf 62 324 Td (curl http://localhost:8080/workout) Tj ET
+BT /F1 10 Tf 54 278 Td (Generate slow requests:) Tj ET
+BT /F3 9 Tf 62 232 Td (curl "http://localhost:8080/workout?delay_ms=1200") Tj ET
+BT /F1 10 Tf 54 186 Td (Generate errors:) Tj ET
+BT /F3 9 Tf 62 140 Td (curl "http://localhost:8080/workout?fail=true") Tj ET
+BT /F1 10 Tf 54 94 Td (Run Game Day helpers:) Tj ET
+endstream
+endobj
+11 0 obj
+<< /Type /Page /Parent 30 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 10 0 R >>
+endobj
+12 0 obj
+<< /Length 1554 >>
+stream
+BT /F3 9 Tf 62 768 Td (make gameday-latency) Tj ET
+BT /F3 9 Tf 62 754 Td (make gameday-errors) Tj ET
+BT /F3 9 Tf 62 740 Td (make gameday-cpu) Tj ET
+BT /F1 10 Tf 54 694 Td (Check backend health endpoints:) Tj ET
+BT /F3 9 Tf 62 648 Td (curl http://localhost:3100/ready) Tj ET
+BT /F3 9 Tf 62 634 Td (curl http://localhost:3100/metrics) Tj ET
+BT /F3 9 Tf 62 620 Td (curl http://localhost:3200/ready) Tj ET
+BT /F3 9 Tf 62 606 Td (curl http://localhost:3200/metrics) Tj ET
+BT /F3 9 Tf 62 592 Td (curl http://localhost:9090/-/healthy) Tj ET
+BT /F2 14 Tf 54 540 Td (Grafana login) Tj ET
+BT /F1 10 Tf 54 510 Td (Open:) Tj ET
+BT /F3 9 Tf 62 464 Td (http://localhost:3000) Tj ET
+BT /F1 10 Tf 54 418 Td (Default credentials:) Tj ET
+BT /F3 9 Tf 62 372 Td (username: admin) Tj ET
+BT /F3 9 Tf 62 358 Td (password: admin) Tj ET
+BT /F1 10 Tf 54 312 Td (If credentials were changed, check `.env` or the environment values used by Docker ) Tj ET
+BT /F1 10 Tf 54 298 Td (Compose.) Tj ET
+BT /F2 14 Tf 54 262 Td (Grafana Explore) Tj ET
+BT /F1 10 Tf 54 232 Td (Grafana Explore is for ad-hoc investigation.) Tj ET
+BT /F1 10 Tf 54 202 Td (Use Prometheus Explore when asking metric questions:) Tj ET
+BT /F1 10 Tf 54 172 Td (- Is request rate increasing?) Tj ET
+BT /F1 10 Tf 54 158 Td (- Is error rate above normal?) Tj ET
+BT /F1 10 Tf 54 144 Td (- Is CPU high?) Tj ET
+BT /F1 10 Tf 54 130 Td (- Are Prometheus targets up?) Tj ET
+BT /F1 10 Tf 54 100 Td (Use Loki Explore when asking log questions:) Tj ET
+BT /F1 10 Tf 54 70 Td (- What did the service log during the incident?) Tj ET
+endstream
+endobj
+13 0 obj
+<< /Type /Page /Parent 30 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 12 0 R >>
+endobj
+14 0 obj
+<< /Length 2660 >>
+stream
+BT /F1 10 Tf 54 784 Td (- Are there error messages?) Tj ET
+BT /F1 10 Tf 54 770 Td (- Which log line has the trace ID?) Tj ET
+BT /F1 10 Tf 54 740 Td (Use Tempo Explore when asking trace questions:) Tj ET
+BT /F1 10 Tf 54 710 Td (- Which endpoint was slow?) Tj ET
+BT /F1 10 Tf 54 696 Td (- Which span took the longest?) Tj ET
+BT /F1 10 Tf 54 682 Td (- Did the request fail?) Tj ET
+BT /F2 14 Tf 54 646 Td (Dashboard 1: Unified Observability) Tj ET
+BT /F1 10 Tf 54 616 Td (This is the most important dashboard.) Tj ET
+BT /F1 10 Tf 54 586 Td (Use it when a service seems slow, broken, or noisy.) Tj ET
+BT /F1 10 Tf 54 556 Td (Panels:) Tj ET
+BT /F1 10 Tf 54 526 Td (- Request Rate: shows traffic by route and status code.) Tj ET
+BT /F1 10 Tf 54 512 Td (- Error Rate: shows the ratio of 5xx responses.) Tj ET
+BT /F1 10 Tf 54 498 Td (- Latency p50/p95/p99: shows request duration percentiles.) Tj ET
+BT /F1 10 Tf 54 484 Td (- Correlated Logs: shows Loki logs from `trainer-api`.) Tj ET
+BT /F1 10 Tf 54 470 Td (- Recent Traces: shows Tempo traces.) Tj ET
+BT /F1 10 Tf 54 440 Td (How to use it:) Tj ET
+BT /F1 10 Tf 54 410 Td (1. Generate traffic with `curl http://localhost:8080/workout`.) Tj ET
+BT /F1 10 Tf 54 396 Td (2. Generate latency with `curl "http://localhost:8080/workout?delay_ms=1200"`.) Tj ET
+BT /F1 10 Tf 54 382 Td (3. Open the Unified Observability dashboard.) Tj ET
+BT /F1 10 Tf 54 368 Td (4. Look for a latency spike.) Tj ET
+BT /F1 10 Tf 54 354 Td (5. Open the logs panel for the same time range.) Tj ET
+BT /F1 10 Tf 54 340 Td (6. Find a log line with `trace_id`.) Tj ET
+BT /F1 10 Tf 54 326 Td (7. Click the `trace_id` link.) Tj ET
+BT /F1 10 Tf 54 312 Td (8. Grafana opens the matching Tempo trace.) Tj ET
+BT /F1 10 Tf 54 298 Td (9. Inspect spans to identify the slow operation.) Tj ET
+BT /F1 10 Tf 54 268 Td (This dashboard proves the platform goes beyond simple up/down monitoring.) Tj ET
+BT /F2 14 Tf 54 232 Td (Dashboard 2: SLO & Error Budget) Tj ET
+BT /F1 10 Tf 54 202 Td (Use this dashboard to know whether the service is meeting reliability promises.) Tj ET
+BT /F1 10 Tf 54 172 Td (Panels:) Tj ET
+BT /F1 10 Tf 54 142 Td (- Availability SLI 30d: percentage of successful health probes.) Tj ET
+BT /F1 10 Tf 54 128 Td (- Latency SLI p95: successful request p95 latency.) Tj ET
+BT /F1 10 Tf 54 114 Td (- Success SLI 5m: percentage of non-5xx requests.) Tj ET
+BT /F1 10 Tf 54 100 Td (- Error Budget Remaining: how much allowed unreliability remains.) Tj ET
+BT /F1 10 Tf 54 86 Td (- Burn Rate Fast / Slow: how quickly the error budget is being consumed.) Tj ET
+BT /F1 10 Tf 54 72 Td (- SLO Compliance 7d / 30d: short and longer-term availability.) Tj ET
+endstream
+endobj
+15 0 obj
+<< /Type /Page /Parent 30 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 14 0 R >>
+endobj
+16 0 obj
+<< /Length 2517 >>
+stream
+BT /F1 10 Tf 54 768 Td (Key idea:) Tj ET
+BT /F1 10 Tf 54 738 Td (An SLI is the measurement. An SLO is the target. The error budget is the allowed ) Tj ET
+BT /F1 10 Tf 54 724 Td (failure.) Tj ET
+BT /F1 10 Tf 54 694 Td (Example:) Tj ET
+BT /F3 9 Tf 62 648 Td (99.5% availability over 30 days allows 0.5% failure.) Tj ET
+BT /F3 9 Tf 62 634 Td (30 days = 720 hours.) Tj ET
+BT /F3 9 Tf 62 620 Td (0.5% of 720 hours = 3.6 hours allowed failure.) Tj ET
+BT /F1 10 Tf 54 574 Td (How to use it:) Tj ET
+BT /F1 10 Tf 54 544 Td (1. Check whether SLI values are above their SLO targets.) Tj ET
+BT /F1 10 Tf 54 530 Td (2. Check whether error budget remaining is healthy.) Tj ET
+BT /F1 10 Tf 54 516 Td (3. If burn rate rises, open Unified Observability.) Tj ET
+BT /F1 10 Tf 54 502 Td (4. Use logs and traces to identify the cause.) Tj ET
+BT /F1 10 Tf 54 488 Td (5. Follow the `runbooks/slo-burn.md` guidance if an alert fires.) Tj ET
+BT /F2 14 Tf 54 452 Td (Dashboard 3: DORA Metrics) Tj ET
+BT /F1 10 Tf 54 422 Td (Use this dashboard to understand delivery performance.) Tj ET
+BT /F1 10 Tf 54 392 Td (Panels:) Tj ET
+BT /F1 10 Tf 54 362 Td (- Deployment Frequency: how often successful deployments happen.) Tj ET
+BT /F1 10 Tf 54 348 Td (- DORA Classification: Elite, High, Medium, or Low.) Tj ET
+BT /F1 10 Tf 54 334 Td (- Lead Time for Changes: time from commit to deployment.) Tj ET
+BT /F1 10 Tf 54 320 Td (- Change Failure Rate: percentage of deployments that fail or require recovery.) Tj ET
+BT /F1 10 Tf 54 306 Td (- Deployment Outcomes: success/failure/cancelled deployment counts.) Tj ET
+BT /F1 10 Tf 54 292 Td (- MTTR: average time to restore service after incidents.) Tj ET
+BT /F1 10 Tf 54 278 Td (- Lead Time Trend: change delivery speed over time.) Tj ET
+BT /F1 10 Tf 54 248 Td (How to use it:) Tj ET
+BT /F1 10 Tf 54 218 Td (1. Set `GITHUB_REPOSITORY`, `GITHUB_TOKEN`, and `DEPLOYMENT_WORKFLOW_NAME` for live ) Tj ET
+BT /F1 10 Tf 68 204 Td (GitHub Actions metrics.) Tj ET
+BT /F1 10 Tf 54 190 Td (2. Trigger normal deploy workflow from GitHub Actions.) Tj ET
+BT /F1 10 Tf 54 176 Td (3. Trigger failing workflow when testing the Game Day deployment failure scenario.) Tj ET
+BT /F1 10 Tf 54 162 Td (4. Watch deployment counts and change failure rate update.) Tj ET
+BT /F1 10 Tf 54 148 Td (5. Investigate alerts when CFR exceeds the threshold.) Tj ET
+BT /F1 10 Tf 54 118 Td (If GitHub credentials are not set, the DORA exporter emits fallback metrics so the ) Tj ET
+BT /F1 10 Tf 54 104 Td (dashboard still loads for demos.) Tj ET
+endstream
+endobj
+17 0 obj
+<< /Type /Page /Parent 30 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 16 0 R >>
+endobj
+18 0 obj
+<< /Length 2287 >>
+stream
+BT /F2 14 Tf 54 778 Td (Dashboard 4: Node Exporter) Tj ET
+BT /F1 10 Tf 54 748 Td (Use this dashboard for host-level infrastructure health.) Tj ET
+BT /F1 10 Tf 54 718 Td (Panels:) Tj ET
+BT /F1 10 Tf 54 688 Td (- CPU Usage: total host CPU.) Tj ET
+BT /F1 10 Tf 54 674 Td (- CPU Per Core: per-core CPU pressure.) Tj ET
+BT /F1 10 Tf 54 660 Td (- Memory Used/Cached/Available: memory pressure and available memory.) Tj ET
+BT /F1 10 Tf 54 646 Td (- Disk I/O: read and write throughput.) Tj ET
+BT /F1 10 Tf 54 632 Td (- Network I/O: receive and transmit throughput.) Tj ET
+BT /F1 10 Tf 54 618 Td (- Load Average: 1m, 5m, and 15m system load.) Tj ET
+BT /F1 10 Tf 54 588 Td (How to use it:) Tj ET
+BT /F1 10 Tf 54 558 Td (1. Open this dashboard when CPU, memory, or disk alerts fire.) Tj ET
+BT /F1 10 Tf 54 544 Td (2. Compare resource pressure with request latency and error rate.) Tj ET
+BT /F1 10 Tf 54 530 Td (3. Use `docker stats` to identify the container causing pressure.) Tj ET
+BT /F1 10 Tf 54 516 Td (4. If the host is unreachable, Alertmanager inhibition should reduce noisy node alerts.) Tj ET
+BT /F2 14 Tf 54 480 Td (Dashboard 5: Blackbox Exporter) Tj ET
+BT /F1 10 Tf 54 450 Td (Use this dashboard for user-facing availability.) Tj ET
+BT /F1 10 Tf 54 420 Td (Panels:) Tj ET
+BT /F1 10 Tf 54 390 Td (- Uptime / Downtime: timeline of probe success and failure.) Tj ET
+BT /F1 10 Tf 54 376 Td (- HTTP Response Time p50/p90/p99: external probe latency.) Tj ET
+BT /F1 10 Tf 54 362 Td (- SSL Expiration Days: certificate expiry countdown.) Tj ET
+BT /F1 10 Tf 54 348 Td (- Probe Success Rate 30d: availability from the probe perspective.) Tj ET
+BT /F1 10 Tf 54 318 Td (How to use it:) Tj ET
+BT /F1 10 Tf 54 288 Td (1. Check this dashboard when users report the service is unreachable.) Tj ET
+BT /F1 10 Tf 54 274 Td (2. Confirm whether the health endpoint is failing.) Tj ET
+BT /F1 10 Tf 54 260 Td (3. Compare probe failure time with deployment time in the DORA dashboard.) Tj ET
+BT /F1 10 Tf 54 246 Td (4. If probe failure lasts two minutes, `InstanceDown` should fire.) Tj ET
+BT /F2 14 Tf 54 210 Td (Prometheus) Tj ET
+BT /F1 10 Tf 54 180 Td (Prometheus is the metrics database and alert rule engine.) Tj ET
+BT /F1 10 Tf 54 150 Td (Open:) Tj ET
+BT /F3 9 Tf 62 104 Td (http://localhost:9090) Tj ET
+endstream
+endobj
+19 0 obj
+<< /Type /Page /Parent 30 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 18 0 R >>
+endobj
+20 0 obj
+<< /Length 1263 >>
+stream
+BT /F1 10 Tf 54 784 Td (Useful pages:) Tj ET
+BT /F1 10 Tf 54 754 Td (- `/targets`: shows scrape target health.) Tj ET
+BT /F1 10 Tf 54 740 Td (- `/alerts`: shows alert rule state.) Tj ET
+BT /F1 10 Tf 54 726 Td (- `/graph`: lets you run PromQL manually.) Tj ET
+BT /F1 10 Tf 54 696 Td (Useful PromQL:) Tj ET
+BT /F3 9 Tf 62 650 Td (up) Tj ET
+BT /F3 9 Tf 62 588 Td (sum\(rate\(http_requests_total[5m]\)\) by \(route, status\)) Tj ET
+BT /F3 9 Tf 62 526 Td (sum\(rate\(http_requests_total{status=~"5.."}[5m]\)\) / sum\(rate\(http_requests_total[5m]\)\)) Tj ET
+BT /F3 9 Tf 62 464 Td (histogram_quantile\(0.95, sum\(rate\(http_request_duration_seconds_bucket[5m]\)\) by \(le, route\)\)) Tj ET
+BT /F3 9 Tf 62 402 Td (100 * \(1 - avg by\(instance\) \(rate\(node_cpu_seconds_total{mode="idle"}[5m]\)\)\)) Tj ET
+BT /F2 14 Tf 54 350 Td (Loki) Tj ET
+BT /F1 10 Tf 54 320 Td (Loki stores logs.) Tj ET
+BT /F1 10 Tf 54 290 Td (Use it from Grafana Explore, not directly from the browser root URL.) Tj ET
+BT /F1 10 Tf 54 260 Td (Example Loki query:) Tj ET
+BT /F3 9 Tf 62 214 Td ({service_name="trainer-api"}) Tj ET
+BT /F1 10 Tf 54 168 Td (Parse JSON logs:) Tj ET
+BT /F3 9 Tf 62 122 Td ({service_name="trainer-api"} | json) Tj ET
+BT /F1 10 Tf 54 76 Td (Find logs with trace IDs:) Tj ET
+endstream
+endobj
+21 0 obj
+<< /Type /Page /Parent 30 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 20 0 R >>
+endobj
+22 0 obj
+<< /Length 1337 >>
+stream
+BT /F3 9 Tf 62 752 Td ({service_name="trainer-api"} | json | trace_id != "") Tj ET
+BT /F1 10 Tf 54 706 Td (Find errors:) Tj ET
+BT /F3 9 Tf 62 660 Td ({service_name="trainer-api"} | json | levelname="ERROR") Tj ET
+BT /F2 14 Tf 54 608 Td (Tempo) Tj ET
+BT /F1 10 Tf 54 578 Td (Tempo stores traces.) Tj ET
+BT /F1 10 Tf 54 548 Td (Use it from Grafana Explore or from clickable trace IDs in Loki logs.) Tj ET
+BT /F1 10 Tf 54 518 Td (Example TraceQL:) Tj ET
+BT /F3 9 Tf 62 472 Td ({ resource.service.name = "trainer-api" }) Tj ET
+BT /F1 10 Tf 54 426 Td (How to use traces:) Tj ET
+BT /F1 10 Tf 54 396 Td (1. Generate a request.) Tj ET
+BT /F1 10 Tf 54 382 Td (2. Open Grafana Explore.) Tj ET
+BT /F1 10 Tf 54 368 Td (3. Select Tempo.) Tj ET
+BT /F1 10 Tf 54 354 Td (4. Search for traces from `trainer-api`.) Tj ET
+BT /F1 10 Tf 54 340 Td (5. Open a trace and inspect spans.) Tj ET
+BT /F1 10 Tf 54 326 Td (6. For latency tests, look for the `build_workout_plan` span.) Tj ET
+BT /F2 14 Tf 54 290 Td (Alertmanager and Slack) Tj ET
+BT /F1 10 Tf 54 260 Td (Alertmanager receives alerts from Prometheus and sends structured messages to Slack.) Tj ET
+BT /F1 10 Tf 54 230 Td (Current Slack channel:) Tj ET
+BT /F3 9 Tf 62 184 Td (#detrudr-alerts-demo) Tj ET
+BT /F1 10 Tf 54 138 Td (Open Alertmanager:) Tj ET
+BT /F3 9 Tf 62 92 Td (http://localhost:9093) Tj ET
+endstream
+endobj
+23 0 obj
+<< /Type /Page /Parent 30 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 22 0 R >>
+endobj
+24 0 obj
+<< /Length 2004 >>
+stream
+BT /F1 10 Tf 54 768 Td (Alert messages include:) Tj ET
+BT /F1 10 Tf 54 738 Td (- alert name) Tj ET
+BT /F1 10 Tf 54 724 Td (- severity) Tj ET
+BT /F1 10 Tf 54 710 Td (- service) Tj ET
+BT /F1 10 Tf 54 696 Td (- host or instance) Tj ET
+BT /F1 10 Tf 54 682 Td (- current value) Tj ET
+BT /F1 10 Tf 54 668 Td (- dashboard link) Tj ET
+BT /F1 10 Tf 54 654 Td (- runbook link) Tj ET
+BT /F1 10 Tf 54 640 Td (- firing or resolved status) Tj ET
+BT /F1 10 Tf 54 610 Td (Important config files:) Tj ET
+BT /F1 10 Tf 54 580 Td (- `observability/prometheus/rules/infrastructure.yml`) Tj ET
+BT /F1 10 Tf 54 566 Td (- `observability/prometheus/rules/slo-burn.yml`) Tj ET
+BT /F1 10 Tf 54 552 Td (- `observability/prometheus/rules/dora.yml`) Tj ET
+BT /F1 10 Tf 54 538 Td (- `observability/alertmanager/alertmanager.yml`) Tj ET
+BT /F1 10 Tf 54 524 Td (- `observability/alertmanager/templates/slack.tmpl`) Tj ET
+BT /F2 14 Tf 54 488 Td (Runbooks) Tj ET
+BT /F1 10 Tf 54 458 Td (Runbooks live in `runbooks/`.) Tj ET
+BT /F1 10 Tf 54 428 Td (Use runbooks when alerts fire.) Tj ET
+BT /F1 10 Tf 54 398 Td (Current runbooks:) Tj ET
+BT /F1 10 Tf 54 368 Td (- `runbooks/cpu.md`) Tj ET
+BT /F1 10 Tf 54 354 Td (- `runbooks/memory.md`) Tj ET
+BT /F1 10 Tf 54 340 Td (- `runbooks/disk.md`) Tj ET
+BT /F1 10 Tf 54 326 Td (- `runbooks/instance-down.md`) Tj ET
+BT /F1 10 Tf 54 312 Td (- `runbooks/slo-burn.md`) Tj ET
+BT /F1 10 Tf 54 298 Td (- `runbooks/change-failure-rate.md`) Tj ET
+BT /F1 10 Tf 54 284 Td (- `runbooks/mttr.md`) Tj ET
+BT /F1 10 Tf 54 254 Td (Every runbook explains:) Tj ET
+BT /F1 10 Tf 54 224 Td (- what the alert means) Tj ET
+BT /F1 10 Tf 54 210 Td (- likely causes) Tj ET
+BT /F1 10 Tf 54 196 Td (- first investigation steps) Tj ET
+BT /F1 10 Tf 54 182 Td (- resolution steps) Tj ET
+BT /F1 10 Tf 54 168 Td (- rollback guidance) Tj ET
+BT /F1 10 Tf 54 154 Td (- escalation path) Tj ET
+BT /F2 14 Tf 54 118 Td (Common troubleshooting) Tj ET
+BT /F1 10 Tf 54 88 Td (If Terraform says "No changes" but containers are not running:) Tj ET
+endstream
+endobj
+25 0 obj
+<< /Type /Page /Parent 30 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 24 0 R >>
+endobj
+26 0 obj
+<< /Length 2149 >>
+stream
+BT /F3 9 Tf 62 768 Td (terraform -chdir=terraform apply -auto-approve) Tj ET
+BT /F1 10 Tf 54 722 Td (The Terraform resource is configured to re-run Compose on each apply.) Tj ET
+BT /F1 10 Tf 54 692 Td (If a container keeps restarting:) Tj ET
+BT /F3 9 Tf 62 646 Td (docker compose -f docker-compose.yml ps) Tj ET
+BT /F3 9 Tf 62 632 Td (docker compose -f docker-compose.yml logs --tail=120 SERVICE_NAME) Tj ET
+BT /F1 10 Tf 54 586 Td (If Loki or Tempo returns 404 in the browser:) Tj ET
+BT /F1 10 Tf 54 556 Td (That is normal at the root path. Use Grafana Explore.) Tj ET
+BT /F1 10 Tf 54 526 Td (If Grafana dashboards are missing:) Tj ET
+BT /F3 9 Tf 62 480 Td (docker compose -f docker-compose.yml restart grafana) Tj ET
+BT /F3 9 Tf 62 466 Td (docker compose -f docker-compose.yml logs --tail=100 grafana) Tj ET
+BT /F1 10 Tf 54 420 Td (If Slack alerts do not arrive:) Tj ET
+BT /F1 10 Tf 54 390 Td (1. Confirm `terraform/terraform.tfvars` contains the correct webhook.) Tj ET
+BT /F1 10 Tf 54 376 Td (2. Confirm Alertmanager is running.) Tj ET
+BT /F1 10 Tf 54 362 Td (3. Open `http://localhost:9093`.) Tj ET
+BT /F1 10 Tf 54 348 Td (4. Check Alertmanager logs.) Tj ET
+BT /F1 10 Tf 54 334 Td (5. Confirm the webhook app can post to `#detrudr-alerts-demo`.) Tj ET
+BT /F1 10 Tf 54 304 Td (If Prometheus targets are down:) Tj ET
+BT /F1 10 Tf 54 274 Td (1. Open `http://localhost:9090/targets`.) Tj ET
+BT /F1 10 Tf 54 260 Td (2. Find the failed job.) Tj ET
+BT /F1 10 Tf 54 246 Td (3. Check the matching container with `docker compose ps`.) Tj ET
+BT /F1 10 Tf 54 232 Td (4. Read that container's logs.) Tj ET
+BT /F2 14 Tf 54 196 Td (What a junior intern should practice first) Tj ET
+BT /F1 10 Tf 54 166 Td (1. Start the stack with `make up`.) Tj ET
+BT /F1 10 Tf 54 152 Td (2. Open Grafana.) Tj ET
+BT /F1 10 Tf 54 138 Td (3. Generate normal traffic with `/workout`.) Tj ET
+BT /F1 10 Tf 54 124 Td (4. Generate latency with `delay_ms=1200`.) Tj ET
+BT /F1 10 Tf 54 110 Td (5. Watch latency rise in Unified Observability.) Tj ET
+BT /F1 10 Tf 54 96 Td (6. Open Loki logs for the same time window.) Tj ET
+BT /F1 10 Tf 54 82 Td (7. Click a `trace_id` into Tempo.) Tj ET
+endstream
+endobj
+27 0 obj
+<< /Type /Page /Parent 30 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 26 0 R >>
+endobj
+28 0 obj
+<< /Length 763 >>
+stream
+BT /F1 10 Tf 54 784 Td (8. Open Prometheus targets and alerts pages.) Tj ET
+BT /F1 10 Tf 54 770 Td (9. Trigger an error with `fail=true`.) Tj ET
+BT /F1 10 Tf 54 756 Td (10. Read the SLO burn runbook and explain what would happen if the error continued.) Tj ET
+BT /F2 14 Tf 54 720 Td (Mental model) Tj ET
+BT /F1 10 Tf 54 690 Td (Prometheus tells you what changed.) Tj ET
+BT /F1 10 Tf 54 660 Td (Loki tells you what the service said.) Tj ET
+BT /F1 10 Tf 54 630 Td (Tempo tells you where time was spent.) Tj ET
+BT /F1 10 Tf 54 600 Td (Grafana brings the three views together.) Tj ET
+BT /F1 10 Tf 54 570 Td (Alertmanager turns reliability problems into actionable Slack notifications.) Tj ET
+BT /F1 10 Tf 54 540 Td (Runbooks tell the responder what to do next.) Tj ET
+endstream
+endobj
+29 0 obj
+<< /Type /Page /Parent 30 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 28 0 R >>
+endobj
+30 0 obj
+<< /Type /Pages /Kids [5 0 R 7 0 R 9 0 R 11 0 R 13 0 R 15 0 R 17 0 R 19 0 R 21 0 R 23 0 R 25 0 R 27 0 R 29 0 R] /Count 13 >>
+endobj
+31 0 obj
+<< /Type /Catalog /Pages 30 0 R >>
+endobj
+xref
+0 32
+0000000000 65535 f 
+0000000009 00000 n 
+0000000079 00000 n 
+0000000154 00000 n 
+0000000222 00000 n 
+0000002849 00000 n 
+0000002996 00000 n 
+0000005074 00000 n 
+0000005221 00000 n 
+0000006605 00000 n 
+0000006752 00000 n 
+0000008040 00000 n 
+0000008189 00000 n 
+0000009796 00000 n 
+0000009945 00000 n 
+0000012658 00000 n 
+0000012807 00000 n 
+0000015377 00000 n 
+0000015526 00000 n 
+0000017866 00000 n 
+0000018015 00000 n 
+0000019331 00000 n 
+0000019480 00000 n 
+0000020870 00000 n 
+0000021019 00000 n 
+0000023076 00000 n 
+0000023225 00000 n 
+0000025427 00000 n 
+0000025576 00000 n 
+0000026391 00000 n 
+0000026540 00000 n 
+0000026681 00000 n 
+trailer
+<< /Size 32 /Root 31 0 R >>
+startxref
+26732
+%%EOF

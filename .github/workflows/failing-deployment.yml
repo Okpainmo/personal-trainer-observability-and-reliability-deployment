@@ -1,0 +1,13 @@
+name: failing-deployment
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Simulate failed deployment
+        run: exit 1

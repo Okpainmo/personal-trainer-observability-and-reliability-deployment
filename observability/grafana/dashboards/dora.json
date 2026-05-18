@@ -1,0 +1,18 @@
+{
+  "uid": "dora",
+  "title": "DORA Metrics",
+  "tags": ["dora", "delivery"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "1m",
+  "panels": [
+    {"type": "stat", "title": "Deployment Frequency", "gridPos": {"x": 0, "y": 0, "w": 6, "h": 6}, "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "sum(increase(dora_deployments_total{conclusion=\"success\"}[7d]))", "legendFormat": "deployments / 7d"}]},
+    {"type": "stat", "title": "DORA Classification", "gridPos": {"x": 6, "y": 0, "w": 6, "h": 6}, "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "sum(increase(dora_deployments_total{conclusion=\"success\"}[1d]))", "legendFormat": "elite >= 1/day"}], "fieldConfig": {"defaults": {"mappings": [{"type": "range", "options": {"from": 1, "to": 9999, "result": {"text": "Elite", "color": "green"}}}, {"type": "range", "options": {"from": 0.1428, "to": 0.9999, "result": {"text": "High", "color": "blue"}}}, {"type": "range", "options": {"from": 0.033, "to": 0.1427, "result": {"text": "Medium", "color": "orange"}}}, {"type": "range", "options": {"from": 0, "to": 0.0329, "result": {"text": "Low", "color": "red"}}}]}}},
+    {"type": "stat", "title": "Lead Time for Changes", "gridPos": {"x": 12, "y": 0, "w": 6, "h": 6}, "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "dora_lead_time_seconds{service=\"trainer-api\"}", "legendFormat": "{{service}}"}], "fieldConfig": {"defaults": {"unit": "s"}}},
+    {"type": "stat", "title": "Change Failure Rate", "gridPos": {"x": 18, "y": 0, "w": 6, "h": 6}, "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "100 * dora_change_failure_rate_ratio{service=\"trainer-api\"}", "legendFormat": "{{service}}"}], "fieldConfig": {"defaults": {"unit": "percent", "thresholds": {"steps": [{"color": "green", "value": null}, {"color": "red", "value": 15}]}}}},
+    {"type": "timeseries", "title": "Deployment Outcomes", "gridPos": {"x": 0, "y": 6, "w": 12, "h": 8}, "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "dora_deployments_total", "legendFormat": "{{conclusion}}"}]},
+    {"type": "timeseries", "title": "MTTR", "gridPos": {"x": 12, "y": 6, "w": 12, "h": 8}, "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "dora_mttr_seconds{service=\"trainer-api\"}", "legendFormat": "{{service}}"}], "fieldConfig": {"defaults": {"unit": "s"}}},
+    {"type": "timeseries", "title": "Lead Time Trend", "gridPos": {"x": 0, "y": 14, "w": 24, "h": 8}, "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "dora_lead_time_seconds{service=\"trainer-api\"}", "legendFormat": "{{service}}"}], "fieldConfig": {"defaults": {"unit": "s"}}}
+  ]
+}

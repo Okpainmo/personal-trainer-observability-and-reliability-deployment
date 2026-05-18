@@ -1,0 +1,15 @@
+{
+  "uid": "blackbox",
+  "title": "Blackbox Exporter",
+  "tags": ["blackbox", "availability"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "15s",
+  "panels": [
+    {"type": "state-timeline", "title": "Uptime / Downtime", "gridPos": {"x": 0, "y": 0, "w": 24, "h": 8}, "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "probe_success{job=\"blackbox-http\"}", "legendFormat": "{{instance}}"}]},
+    {"type": "timeseries", "title": "HTTP Response Time p50/p90/p99", "gridPos": {"x": 0, "y": 8, "w": 12, "h": 8}, "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "quantile_over_time(0.50, probe_duration_seconds{job=\"blackbox-http\"}[5m])", "legendFormat": "p50 {{instance}}"}, {"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "quantile_over_time(0.90, probe_duration_seconds{job=\"blackbox-http\"}[5m])", "legendFormat": "p90 {{instance}}"}, {"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "quantile_over_time(0.99, probe_duration_seconds{job=\"blackbox-http\"}[5m])", "legendFormat": "p99 {{instance}}"}]},
+    {"type": "bargauge", "title": "SSL Expiration Days", "gridPos": {"x": 12, "y": 8, "w": 12, "h": 8}, "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "(probe_ssl_earliest_cert_expiry - time()) / 86400", "legendFormat": "{{instance}}"}]},
+    {"type": "stat", "title": "Probe Success Rate 30d", "gridPos": {"x": 0, "y": 16, "w": 24, "h": 6}, "targets": [{"datasource": {"type": "prometheus", "uid": "prometheus"}, "expr": "100 * avg_over_time(probe_success{job=\"blackbox-http\"}[30d])", "legendFormat": "{{instance}}"}]}
+  ]
+}

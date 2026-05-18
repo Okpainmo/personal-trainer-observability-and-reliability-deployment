@@ -1,0 +1,98 @@
+groups:
+  - name: infrastructure
+    rules:
+      - alert: HostExporterDown
+        expr: up{job="node-exporter"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: node
+        annotations:
+          summary: "Node Exporter is unreachable on {{ $labels.instance }}"
+          current_value: "{{ $value }}"
+          dashboard_url: "http://localhost:3000/d/node-exporter/node-exporter"
+          runbook_url: "runbooks/instance-down.md"
+
+      - alert: HostHighCpuWarning
+        expr: 100 * (1 - avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))) > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: node
+        annotations:
+          summary: "CPU usage above 80% on {{ $labels.instance }}"
+          current_value: "{{ printf \"%.2f\" $value }}%"
+          dashboard_url: "http://localhost:3000/d/node-exporter/node-exporter"
+          runbook_url: "runbooks/cpu.md"
+
+      - alert: HostHighCpuCritical
+        expr: 100 * (1 - avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))) > 90
+        for: 10m
+        labels:
+          severity: critical
+          service: node
+        annotations:
+          summary: "CPU usage above 90% on {{ $labels.instance }}"
+          current_value: "{{ printf \"%.2f\" $value }}%"
+          dashboard_url: "http://localhost:3000/d/node-exporter/node-exporter"
+          runbook_url: "runbooks/cpu.md"
+
+      - alert: HostHighMemoryWarning
+        expr: 100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: node
+        annotations:
+          summary: "Memory usage above 80% on {{ $labels.instance }}"
+          current_value: "{{ printf \"%.2f\" $value }}%"
+          dashboard_url: "http://localhost:3000/d/node-exporter/node-exporter"
+          runbook_url: "runbooks/memory.md"
+
+      - alert: HostHighMemoryCritical
+        expr: 100 * (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 90
+        for: 10m
+        labels:
+          severity: critical
+          service: node
+        annotations:
+          summary: "Memory usage above 90% on {{ $labels.instance }}"
+          current_value: "{{ printf \"%.2f\" $value }}%"
+          dashboard_url: "http://localhost:3000/d/node-exporter/node-exporter"
+          runbook_url: "runbooks/memory.md"
+
+      - alert: HostDiskFillingWarning
+        expr: 100 * (1 - (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"})) > 75
+        for: 5m
+        labels:
+          severity: warning
+          service: node
+        annotations:
+          summary: "Disk usage above 75% on {{ $labels.instance }} {{ $labels.mountpoint }}"
+          current_value: "{{ printf \"%.2f\" $value }}%"
+          dashboard_url: "http://localhost:3000/d/node-exporter/node-exporter"
+          runbook_url: "runbooks/disk.md"
+
+      - alert: HostDiskFillingCritical
+        expr: 100 * (1 - (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"})) > 90
+        for: 10m
+        labels:
+          severity: critical
+          service: node
+        annotations:
+          summary: "Disk usage above 90% on {{ $labels.instance }} {{ $labels.mountpoint }}"
+          current_value: "{{ printf \"%.2f\" $value }}%"
+          dashboard_url: "http://localhost:3000/d/node-exporter/node-exporter"
+          runbook_url: "runbooks/disk.md"
+
+      - alert: InstanceDown
+        expr: probe_success{job="blackbox-http"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: blackbox
+        annotations:
+          summary: "Blackbox probe failed for {{ $labels.instance }}"
+          current_value: "{{ $value }}"
+          dashboard_url: "http://localhost:3000/d/blackbox/blackbox-exporter"
+          runbook_url: "runbooks/instance-down.md"
