@@ -15,7 +15,7 @@ terraform {
 
 locals {
   repo_root     = abspath("${path.module}/..")
-  generated_dir = "${path.module}/.generated"
+  generated_dir = abspath("${path.module}/.generated")
 
   unit_template_vars = {
     service_user = var.service_user

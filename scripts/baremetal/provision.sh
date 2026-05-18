@@ -8,6 +8,29 @@ DATA_DIR="${DATA_DIR:-/var/lib/personal-trainer-observability}"
 APP_DIR="${APP_DIR:-/opt/personal-trainer-observability}"
 SERVICE_USER="${SERVICE_USER:-observability}"
 
+require_file() {
+  local path="$1"
+  if [ ! -f "$path" ]; then
+    echo "required generated file is missing: $path" >&2
+    echo "rerun: terraform -chdir=terraform apply -auto-approve" >&2
+    exit 1
+  fi
+}
+
+require_dir() {
+  local path="$1"
+  if [ ! -d "$path" ]; then
+    echo "required generated directory is missing: $path" >&2
+    echo "rerun: terraform -chdir=terraform apply -auto-approve" >&2
+    exit 1
+  fi
+}
+
+require_file "$GENERATED_DIR/slack_webhook_url"
+require_file "$GENERATED_DIR/secrets/dora-exporter.env"
+require_file "$GENERATED_DIR/grafana/grafana.ini"
+require_dir "$GENERATED_DIR/systemd"
+
 sudo useradd --system --home "$APP_DIR" --shell /usr/sbin/nologin "$SERVICE_USER" 2>/dev/null || true
 
 sudo mkdir -p \
