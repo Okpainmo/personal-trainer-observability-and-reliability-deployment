@@ -3,10 +3,10 @@ global:
   evaluation_interval: 15s
   external_labels:
     environment: production
-    platform: personal-trainer
+    platform: observability-platform
 
 rule_files:
-  - /etc/personal-trainer-observability/prometheus/rules/*.yml
+  - /etc/observability-platform/prometheus/rules/*.yml
 
 alerting:
   alertmanagers:
@@ -19,12 +19,12 @@ scrape_configs:
     static_configs:
       - targets: ["127.0.0.1:9090"]
 
-  - job_name: trainer-api
+  - job_name: test-api
     metrics_path: /metrics
     static_configs:
       - targets: ["127.0.0.1:8080"]
         labels:
-          service: trainer-api
+          service: test-api
 
   - job_name: node-exporter
     scrape_interval: 15s
@@ -45,7 +45,7 @@ scrape_configs:
     static_configs:
       - targets: ["127.0.0.1:9108"]
         labels:
-          service: trainer-api
+          service: test-api
 
   - job_name: blackbox-http
     metrics_path: /probe

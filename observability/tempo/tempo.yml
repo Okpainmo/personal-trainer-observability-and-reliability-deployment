@@ -21,13 +21,13 @@ storage:
   trace:
     backend: local
     wal:
-      path: /var/lib/personal-trainer-observability/tempo/wal
+      path: /var/lib/observability-platform/tempo/wal
     local:
-      path: /var/lib/personal-trainer-observability/tempo/blocks
+      path: /var/lib/observability-platform/tempo/blocks
 
 metrics_generator:
   registry:
     external_labels:
       source: tempo
   storage:
-    path: /var/lib/personal-trainer-observability/tempo/generator/wal
+    path: /var/lib/observability-platform/tempo/generator/wal

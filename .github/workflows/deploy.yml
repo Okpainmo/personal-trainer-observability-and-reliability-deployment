@@ -17,4 +17,4 @@ jobs:
           terraform -chdir=terraform fmt -check
 
       - name: Deployment confirmation
-        run: echo "Deployment confirmed for trainer-api"
+        run: echo "Deployment confirmed for test-api"

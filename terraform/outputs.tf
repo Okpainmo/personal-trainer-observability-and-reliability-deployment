@@ -10,7 +10,7 @@ output "alertmanager_url" {
   value = "http://localhost:9093"
 }
 
-output "trainer_api_url" {
+output "test_api_url" {
   value = "http://localhost:8080"
 }
 

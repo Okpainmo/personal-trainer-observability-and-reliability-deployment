@@ -4,11 +4,11 @@ server:
   http_listen_port: 3100
 
 common:
-  path_prefix: /var/lib/personal-trainer-observability/loki
+  path_prefix: /var/lib/observability-platform/loki
   storage:
     filesystem:
-      chunks_directory: /var/lib/personal-trainer-observability/loki/chunks
-      rules_directory: /var/lib/personal-trainer-observability/loki/rules
+      chunks_directory: /var/lib/observability-platform/loki/chunks
+      rules_directory: /var/lib/observability-platform/loki/rules
   replication_factor: 1
   ring:
     kvstore:
@@ -29,6 +29,6 @@ limits_config:
   allow_structured_metadata: true
 
 compactor:
-  working_directory: /var/lib/personal-trainer-observability/loki/compactor
+  working_directory: /var/lib/observability-platform/loki/compactor
   retention_enabled: true
   delete_request_store: filesystem

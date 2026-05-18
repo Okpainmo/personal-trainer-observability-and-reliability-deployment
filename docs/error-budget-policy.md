@@ -1,6 +1,6 @@
 # Error Budget Policy
 
-Owner: platform engineering and the service owner for `trainer-api`.
+Owner: platform engineering and the service owner for `test-api`.
 
 Review cadence: weekly during delivery, monthly for target recalibration.
 

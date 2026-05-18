@@ -11,25 +11,25 @@ groups:
         expr: sum(rate(http_requests_total{status=~"5.."}[6h])) by (service) / sum(rate(http_requests_total[6h])) by (service)
 
       - alert: SLOFastBurnCritical
-        expr: job:http_error_ratio:rate1h{service="trainer-api"} > (14.4 * 0.005)
+        expr: job:http_error_ratio:rate1h{service="test-api"} > (14.4 * 0.005)
         for: 5m
         labels:
           severity: critical
-          service: trainer-api
+          service: test-api
         annotations:
-          summary: "Fast error-budget burn for trainer-api"
+          summary: "Fast error-budget burn for test-api"
           current_value: "{{ printf \"%.4f\" $value }}"
           dashboard_url: "http://localhost:3000/d/slo-error-budget/slo-error-budget"
           runbook_url: "runbooks/slo-burn.md"
 
       - alert: SLOSlowBurnWarning
-        expr: job:http_error_ratio:rate6h{service="trainer-api"} > (5 * 0.005)
+        expr: job:http_error_ratio:rate6h{service="test-api"} > (5 * 0.005)
         for: 15m
         labels:
           severity: warning
-          service: trainer-api
+          service: test-api
         annotations:
-          summary: "Slow error-budget burn for trainer-api"
+          summary: "Slow error-budget burn for test-api"
           current_value: "{{ printf \"%.4f\" $value }}"
           dashboard_url: "http://localhost:3000/d/slo-error-budget/slo-error-budget"
           runbook_url: "runbooks/slo-burn.md"

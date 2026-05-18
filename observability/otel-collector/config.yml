@@ -9,7 +9,7 @@ receivers:
   journald:
     directory: /var/log/journal
     units:
-      - trainer-api.service
+      - test-api.service
       - dora-exporter.service
       - prometheus.service
       - alertmanager.service
@@ -23,7 +23,7 @@ processors:
   resource:
     attributes:
       - key: service.name
-        value: trainer-api
+        value: test-api
         action: upsert
       - key: deployment.environment
         value: production

@@ -27,19 +27,19 @@ variable "service_user" {
 variable "config_dir" {
   description = "Bare-metal configuration root."
   type        = string
-  default     = "/etc/personal-trainer-observability"
+  default     = "/etc/observability-platform"
 }
 
 variable "data_dir" {
   description = "Bare-metal persistent data root."
   type        = string
-  default     = "/var/lib/personal-trainer-observability"
+  default     = "/var/lib/observability-platform"
 }
 
 variable "app_dir" {
   description = "Application installation root."
   type        = string
-  default     = "/opt/personal-trainer-observability"
+  default     = "/opt/observability-platform"
 }
 
 variable "install_binaries" {

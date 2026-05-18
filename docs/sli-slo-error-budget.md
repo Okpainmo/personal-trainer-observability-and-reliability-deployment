@@ -101,11 +101,11 @@ Error budget:
 Fast burn:
 
 ```promql
-job:http_error_ratio:rate1h{service="trainer-api"} > (14.4 * 0.005)
+job:http_error_ratio:rate1h{service="test-api"} > (14.4 * 0.005)
 ```
 
 Slow burn:
 
 ```promql
-job:http_error_ratio:rate6h{service="trainer-api"} > (5 * 0.005)
+job:http_error_ratio:rate6h{service="test-api"} > (5 * 0.005)
 ```

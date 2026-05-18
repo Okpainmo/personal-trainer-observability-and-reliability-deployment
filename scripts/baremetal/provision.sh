@@ -3,9 +3,9 @@ set -euo pipefail
 
 REPO_ROOT="${REPO_ROOT:?REPO_ROOT is required}"
 GENERATED_DIR="${GENERATED_DIR:?GENERATED_DIR is required}"
-CONFIG_DIR="${CONFIG_DIR:-/etc/personal-trainer-observability}"
-DATA_DIR="${DATA_DIR:-/var/lib/personal-trainer-observability}"
-APP_DIR="${APP_DIR:-/opt/personal-trainer-observability}"
+CONFIG_DIR="${CONFIG_DIR:-/etc/observability-platform}"
+DATA_DIR="${DATA_DIR:-/var/lib/observability-platform}"
+APP_DIR="${APP_DIR:-/opt/observability-platform}"
 SERVICE_USER="${SERVICE_USER:-observability}"
 
 require_file() {
@@ -32,6 +32,11 @@ require_file "$GENERATED_DIR/grafana/grafana.ini"
 require_dir "$GENERATED_DIR/systemd"
 
 sudo useradd --system --home "$APP_DIR" --shell /usr/sbin/nologin "$SERVICE_USER" 2>/dev/null || true
+
+# Remove the legacy built-in demo service name from earlier revisions.
+sudo systemctl disable --now trainer-api.service 2>/dev/null || true
+sudo rm -f /etc/systemd/system/trainer-api.service
+sudo rm -rf "$APP_DIR/services/trainer-api"
 
 sudo mkdir -p \
   "$CONFIG_DIR/prometheus/rules" \
@@ -64,12 +69,12 @@ sudo cp "$REPO_ROOT/observability/grafana/dashboards/"*.json "$CONFIG_DIR/grafan
 sudo install -m 0600 "$GENERATED_DIR/slack_webhook_url" "$CONFIG_DIR/secrets/slack_webhook_url"
 sudo install -m 0600 "$GENERATED_DIR/secrets/dora-exporter.env" "$CONFIG_DIR/secrets/dora-exporter.env"
 
-sudo rsync -a --delete "$REPO_ROOT/services/trainer-api/" "$APP_DIR/services/trainer-api/"
+sudo rsync -a --delete "$REPO_ROOT/services/test-api/" "$APP_DIR/services/test-api/"
 sudo rsync -a --delete "$REPO_ROOT/services/dora-exporter/" "$APP_DIR/services/dora-exporter/"
 
-sudo python3 -m venv "$APP_DIR/services/trainer-api/.venv"
-sudo "$APP_DIR/services/trainer-api/.venv/bin/pip" install --upgrade pip
-sudo "$APP_DIR/services/trainer-api/.venv/bin/pip" install -r "$APP_DIR/services/trainer-api/requirements.txt"
+sudo python3 -m venv "$APP_DIR/services/test-api/.venv"
+sudo "$APP_DIR/services/test-api/.venv/bin/pip" install --upgrade pip
+sudo "$APP_DIR/services/test-api/.venv/bin/pip" install -r "$APP_DIR/services/test-api/requirements.txt"
 
 sudo python3 -m venv "$APP_DIR/services/dora-exporter/.venv"
 sudo "$APP_DIR/services/dora-exporter/.venv/bin/pip" install --upgrade pip
@@ -97,7 +102,7 @@ sudo systemctl enable --now \
   otel-collector.service \
   node-exporter.service \
   blackbox-exporter.service \
-  trainer-api.service \
+  test-api.service \
   dora-exporter.service \
   grafana-server.service
 
@@ -109,7 +114,7 @@ sudo systemctl restart \
   otel-collector.service \
   node-exporter.service \
   blackbox-exporter.service \
-  trainer-api.service \
+  test-api.service \
   dora-exporter.service \
   grafana-server.service
 

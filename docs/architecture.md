@@ -4,7 +4,7 @@
 
 ```mermaid
 flowchart LR
-  U[User or Blackbox probe] --> API[trainer-api systemd service]
+  U[User or Blackbox probe] --> API[test-api systemd service]
   API -->|/metrics on :8080| P[Prometheus]
   API -->|OTLP traces to :4317| OTel[OpenTelemetry Collector]
   Journal[journald] -->|systemd service logs| OTel
@@ -26,7 +26,7 @@ flowchart LR
 flowchart TD
   TF[terraform apply] --> Render[Render secrets, Grafana config, and systemd units]
   Render --> Install[Install binaries if install_binaries=true]
-  Install --> Copy[Copy configs to /etc/personal-trainer-observability]
+  Install --> Copy[Copy configs to /etc/observability-platform]
   Copy --> Venv[Create Python virtualenvs]
   Venv --> Systemd[systemctl enable --now services]
   Systemd --> Stack[LGTM stack, exporters, app, DORA exporter]
@@ -67,7 +67,7 @@ sequenceDiagram
 ## Filesystem layout
 
 ```text
-/etc/personal-trainer-observability/
+/etc/observability-platform/
   prometheus/
   alertmanager/
   grafana/
@@ -77,13 +77,13 @@ sequenceDiagram
   blackbox/
   secrets/
 
-/var/lib/personal-trainer-observability/
+/var/lib/observability-platform/
   prometheus/
   alertmanager/
   loki/
   tempo/
 
-/opt/personal-trainer-observability/
-  services/trainer-api/
+/opt/observability-platform/
+  services/test-api/
   services/dora-exporter/
 ```

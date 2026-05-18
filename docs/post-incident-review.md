@@ -1,6 +1,6 @@
 # Blameless Post-Incident Review
 
-Incident: simulated latency degradation on `trainer-api`.
+Incident: simulated latency degradation on `test-api`.
 
 Date: 2026-05-18.
 

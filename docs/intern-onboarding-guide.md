@@ -9,8 +9,8 @@ The main goal is to move from "something is wrong" to "this endpoint/span/log li
 ## How the services work together
 
 ```text
-trainer-api -> metrics -> Prometheus
-trainer-api -> traces -> OpenTelemetry Collector -> Tempo
+test-api -> metrics -> Prometheus
+test-api -> traces -> OpenTelemetry Collector -> Tempo
 systemd journals -> OpenTelemetry Collector -> Loki
 Prometheus alerts -> Alertmanager -> Slack #detrudr-alerts-demo
 Grafana -> Prometheus + Loki + Tempo
@@ -21,7 +21,7 @@ Grafana -> Prometheus + Loki + Tempo
 - Grafana: http://localhost:3000
 - Prometheus: http://localhost:9090
 - Alertmanager: http://localhost:9093
-- Trainer API: http://localhost:8080
+- Test API: http://localhost:8080
 - Loki API: http://localhost:3100
 - Tempo API: http://localhost:3200
 - Node Exporter: http://localhost:9100
@@ -79,8 +79,8 @@ make health
 Inspect one service:
 
 ```bash
-systemctl status trainer-api --no-pager
-journalctl -u trainer-api -f
+systemctl status test-api --no-pager
+journalctl -u test-api -f
 ```
 
 Generate normal traffic:
@@ -224,9 +224,9 @@ Use Loki from Grafana Explore.
 Queries:
 
 ```logql
-{service_name="trainer-api"}
-{service_name="trainer-api"} | json
-{service_name="trainer-api"} | json | trace_id != ""
+{service_name="test-api"}
+{service_name="test-api"} | json
+{service_name="test-api"} | json | trace_id != ""
 ```
 
 ## Tempo
@@ -236,7 +236,7 @@ Use Tempo from Grafana Explore or by clicking a `trace_id` in Loki logs.
 TraceQL:
 
 ```traceql
-{ resource.service.name = "trainer-api" }
+{ resource.service.name = "test-api" }
 ```
 
 ## Alertmanager and Slack

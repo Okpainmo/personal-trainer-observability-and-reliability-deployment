@@ -11,7 +11,7 @@ OTELCOL_VERSION="${OTELCOL_VERSION:-0.110.0}"
 GRAFANA_VERSION="${GRAFANA_VERSION:-11.2.0}"
 
 BIN_DIR="${BIN_DIR:-/usr/local/bin}"
-WORK_DIR="${WORK_DIR:-/var/tmp/personal-trainer-observability-install}"
+WORK_DIR="${WORK_DIR:-/var/tmp/observability-platform-install}"
 TMPDIR="${TMPDIR:-$WORK_DIR/tmp}"
 MIN_FREE_MB="${MIN_FREE_MB:-1024}"
 

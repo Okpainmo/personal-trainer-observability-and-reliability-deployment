@@ -2,25 +2,25 @@ groups:
   - name: dora
     rules:
       - alert: ChangeFailureRateTooHigh
-        expr: dora_change_failure_rate_ratio{service="trainer-api"} > 0.15
+        expr: dora_change_failure_rate_ratio{service="test-api"} > 0.15
         for: 5m
         labels:
           severity: warning
-          service: trainer-api
+          service: test-api
         annotations:
-          summary: "Change failure rate exceeds 15% for trainer-api"
+          summary: "Change failure rate exceeds 15% for test-api"
           current_value: "{{ printf \"%.2f\" $value }}"
           dashboard_url: "http://localhost:3000/d/dora/dora-metrics"
           runbook_url: "runbooks/change-failure-rate.md"
 
       - alert: MTTRTooHigh
-        expr: dora_mttr_seconds{service="trainer-api"} > 1800
+        expr: dora_mttr_seconds{service="test-api"} > 1800
         for: 5m
         labels:
           severity: warning
-          service: trainer-api
+          service: test-api
         annotations:
-          summary: "MTTR exceeds 30 minutes for trainer-api"
+          summary: "MTTR exceeds 30 minutes for test-api"
           current_value: "{{ printf \"%.0f\" $value }} seconds"
           dashboard_url: "http://localhost:3000/d/dora/dora-metrics"
           runbook_url: "runbooks/mttr.md"

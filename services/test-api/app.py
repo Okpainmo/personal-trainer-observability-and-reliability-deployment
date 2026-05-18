@@ -11,12 +11,12 @@ from pythonjsonlogger import jsonlogger
 
 handler = logging.StreamHandler()
 handler.setFormatter(jsonlogger.JsonFormatter("%(asctime)s %(levelname)s %(name)s %(message)s %(trace_id)s %(span_id)s"))
-logger = logging.getLogger("trainer-api")
+logger = logging.getLogger("test-api")
 logger.setLevel(logging.INFO)
 logger.addHandler(handler)
 logger.propagate = False
 
-app = FastAPI(title="Personal Trainer API", version="1.0.0")
+app = FastAPI(title="Test API", version="1.0.0")
 tracer = trace.get_tracer(__name__)
 
 REQUESTS = Counter("http_requests_total", "Total HTTP requests", ["method", "route", "status"])

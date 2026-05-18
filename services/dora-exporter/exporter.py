@@ -65,7 +65,7 @@ def fallback_runs() -> list[dict]:
 
 
 def collect():
-    service = "trainer-api"
+    service = "test-api"
     try:
         runs = github_runs() or fallback_runs()
     except Exception:

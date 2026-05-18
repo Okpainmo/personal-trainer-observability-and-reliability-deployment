@@ -32,7 +32,7 @@ locals {
     otel-collector    = "${local.repo_root}/systemd/otel-collector.service.tftpl"
     node-exporter     = "${local.repo_root}/systemd/node-exporter.service.tftpl"
     blackbox-exporter = "${local.repo_root}/systemd/blackbox-exporter.service.tftpl"
-    trainer-api       = "${local.repo_root}/systemd/trainer-api.service.tftpl"
+    test-api          = "${local.repo_root}/systemd/test-api.service.tftpl"
     dora-exporter     = "${local.repo_root}/systemd/dora-exporter.service.tftpl"
   }
 }
@@ -83,7 +83,7 @@ resource "null_resource" "validate_repository_config" {
 
   provisioner "local-exec" {
     working_dir = local.repo_root
-    command     = "python3 -m json.tool observability/grafana/dashboards/dora.json >/dev/null && python3 -m json.tool observability/grafana/dashboards/unified-observability.json >/dev/null && python3 -c 'import ast,pathlib; [ast.parse(pathlib.Path(p).read_text()) for p in [\"services/trainer-api/app.py\",\"services/dora-exporter/exporter.py\"]]'"
+    command     = "python3 -m json.tool observability/grafana/dashboards/dora.json >/dev/null && python3 -m json.tool observability/grafana/dashboards/unified-observability.json >/dev/null && python3 -c 'import ast,pathlib; [ast.parse(pathlib.Path(p).read_text()) for p in [\"services/test-api/app.py\",\"services/dora-exporter/exporter.py\"]]'"
   }
 }
 

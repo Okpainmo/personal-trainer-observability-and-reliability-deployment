@@ -1,6 +1,6 @@
-# Personal Trainer Bare-Metal Observability And Reliability Platform
+# Reusable Bare-Metal Observability And Reliability Platform
 
-This repository deploys a production-style observability and reliability platform for `trainer-api` on bare metal Linux using Terraform and systemd. It does not use Docker.
+This repository deploys a production-style observability and reliability platform for `test-api` on bare metal Linux using Terraform and systemd. It does not use Docker.
 
 ## Stack
 
@@ -12,8 +12,10 @@ This repository deploys a production-style observability and reliability platfor
 - Node Exporter for host CPU, memory, disk, network, and load metrics.
 - Blackbox Exporter for uptime, HTTP latency, and SSL expiry probes.
 - OpenTelemetry Collector for traces and journald log shipping.
-- `trainer-api`, an OpenTelemetry-instrumented FastAPI service.
+- `test-api`, an OpenTelemetry-instrumented FastAPI service.
 - DORA Exporter for deployment frequency, lead time, CFR, and MTTR.
+
+`test-api` is not the product being monitored. It is an internal demo workload used to verify metrics, logs, traces, SLOs, dashboards, and alerts. In production, replace or extend its targets with the external services you want this reusable observability platform to monitor.
 
 ## Architecture
 
@@ -22,8 +24,8 @@ See [docs/architecture.md](docs/architecture.md).
 Short flow:
 
 ```text
-trainer-api metrics -> Prometheus -> Alertmanager -> Slack
-trainer-api traces -> OpenTelemetry Collector -> Tempo
+test-api metrics -> Prometheus -> Alertmanager -> Slack
+test-api traces -> OpenTelemetry Collector -> Tempo
 systemd journals -> OpenTelemetry Collector -> Loki
 Grafana -> Prometheus + Loki + Tempo
 ```
@@ -85,25 +87,25 @@ It installs or configures:
 - `/usr/local/bin/node_exporter`
 - `/usr/local/bin/blackbox_exporter`
 - Grafana server
-- Python virtualenvs for `trainer-api` and `dora-exporter`
+- Python virtualenvs for `test-api` and `dora-exporter`
 - systemd units for every component
 
 Config root:
 
 ```text
-/etc/personal-trainer-observability
+/etc/observability-platform
 ```
 
 Data root:
 
 ```text
-/var/lib/personal-trainer-observability
+/var/lib/observability-platform
 ```
 
 App root:
 
 ```text
-/opt/personal-trainer-observability
+/opt/observability-platform
 ```
 
 ## Service URLs
@@ -111,7 +113,7 @@ App root:
 - Grafana: http://localhost:3000
 - Prometheus: http://localhost:9090
 - Alertmanager: http://localhost:9093
-- Trainer API: http://localhost:8080
+- Test API: http://localhost:8080
 - Loki API: http://localhost:3100
 - Tempo API: http://localhost:3200
 - Node Exporter: http://localhost:9100
@@ -134,8 +136,8 @@ make down
 Inspect one service:
 
 ```bash
-systemctl status trainer-api --no-pager
-journalctl -u trainer-api -f
+systemctl status test-api --no-pager
+journalctl -u test-api -f
 ```
 
 Generate telemetry:

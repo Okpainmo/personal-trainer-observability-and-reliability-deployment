@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-CONFIG_DIR="${CONFIG_DIR:-/etc/personal-trainer-observability}"
-DATA_DIR="${DATA_DIR:-/var/lib/personal-trainer-observability}"
-APP_DIR="${APP_DIR:-/opt/personal-trainer-observability}"
+CONFIG_DIR="${CONFIG_DIR:-/etc/observability-platform}"
+DATA_DIR="${DATA_DIR:-/var/lib/observability-platform}"
+APP_DIR="${APP_DIR:-/opt/observability-platform}"
 
 services=(
   prometheus.service
@@ -13,6 +13,7 @@ services=(
   otel-collector.service
   node-exporter.service
   blackbox-exporter.service
+  test-api.service
   trainer-api.service
   dora-exporter.service
 )
