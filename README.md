@@ -1,6 +1,6 @@
 # Reusable Bare-Metal Observability And Reliability Platform
 
-This repository deploys a production-style observability and reliability platform for `test-api` on bare metal Linux using Terraform and systemd. It does not use Docker.
+This repository deploys an adaptable production-style observability and reliability platform with a a built-in smoke-test `test-api` service - all on bare metal Linux using Terraform and systemd. It does not use Docker.
 
 ## Stack
 
