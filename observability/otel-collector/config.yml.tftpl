@@ -1,0 +1,91 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+  journald/platform:
+    directory: /var/log/journal
+    units:
+%{ if deploy_test_api ~}
+      - test-api.service
+%{ endif ~}
+      - dora-exporter.service
+      - prometheus.service
+      - alertmanager.service
+      - loki.service
+      - tempo.service
+      - grafana-server.service
+    priority: info
+%{ if collect_local_monitored_service_logs ~}
+
+  journald/monitored:
+    directory: /var/log/journal
+    units:
+      - ${monitored_service_systemd_unit}
+    priority: info
+%{ endif ~}
+
+processors:
+  batch:
+
+  resource/platform_logs:
+    attributes:
+      - key: service.name
+        value: observability-platform
+        action: upsert
+      - key: deployment.environment
+        value: production
+        action: upsert
+%{ if collect_local_monitored_service_logs ~}
+
+  resource/monitored_logs:
+    attributes:
+      - key: service.name
+        value: ${monitored_service_name}
+        action: upsert
+      - key: deployment.environment
+        value: production
+        action: upsert
+%{ endif ~}
+
+exporters:
+  otlp/tempo:
+    endpoint: 127.0.0.1:4319
+    tls:
+      insecure: true
+
+  otlphttp/loki:
+    endpoint: http://127.0.0.1:3100/otlp
+
+  prometheus:
+    endpoint: 0.0.0.0:8889
+
+  debug:
+    verbosity: basic
+
+service:
+  telemetry:
+    metrics:
+      address: 0.0.0.0:8888
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlp/tempo]
+    logs/otlp:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [otlphttp/loki]
+    logs/platform:
+      receivers: [journald/platform]
+      processors: [resource/platform_logs, batch]
+      exporters: [otlphttp/loki]
+%{ if collect_local_monitored_service_logs ~}
+    logs/monitored:
+      receivers: [journald/monitored]
+      processors: [resource/monitored_logs, batch]
+      exporters: [otlphttp/loki]
+%{ endif ~}

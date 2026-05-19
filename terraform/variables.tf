@@ -48,6 +48,60 @@ variable "install_binaries" {
   default     = true
 }
 
+variable "deploy_test_api" {
+  description = "When true, deploy the bundled smoke-test test-api workload."
+  type        = bool
+  default     = false
+}
+
+variable "test_api_port" {
+  description = "Port for the optional bundled smoke-test test-api workload."
+  type        = number
+  default     = 8081
+}
+
+variable "monitored_service_name" {
+  description = "Logical service name for the application being monitored."
+  type        = string
+  default     = "personal-trainer-be"
+}
+
+variable "monitored_service_metrics_target" {
+  description = "Prometheus target for the monitored application's /metrics endpoint."
+  type        = string
+  default     = "127.0.0.1:8080"
+}
+
+variable "monitored_service_health_url" {
+  description = "HTTP URL Blackbox Exporter should probe for the monitored application's health check."
+  type        = string
+  default     = "http://127.0.0.1:8080/api/v1/health"
+}
+
+variable "monitored_service_systemd_unit" {
+  description = "systemd unit name for the monitored application. Used by local journald collection or by a remote app-host collector agent."
+  type        = string
+  default     = "personal-trainer-be.service"
+}
+
+variable "collect_local_monitored_service_logs" {
+  description = "When true, the central collector reads the monitored service journal from the observability host. Keep false when the service runs on another server."
+  type        = bool
+  default     = false
+}
+
+variable "extra_http_probe_targets" {
+  description = "Additional HTTP URLs for Blackbox Exporter to probe."
+  type        = list(string)
+  default     = ["http://127.0.0.1:3000/login"]
+}
+
+variable "ssl_probe_targets" {
+  description = "HTTPS URLs/domains for Blackbox Exporter SSL probes."
+  type        = list(string)
+  default     = ["https://github.com"]
+}
+
 variable "github_repository" {
   description = "GitHub repository in owner/name format for DORA metrics."
   type        = string

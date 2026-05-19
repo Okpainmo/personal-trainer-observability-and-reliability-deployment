@@ -11,7 +11,7 @@ Environment=OTEL_SERVICE_NAME=test-api
 Environment=OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4317
 Environment=OTEL_EXPORTER_OTLP_PROTOCOL=grpc
 Environment=OTEL_RESOURCE_ATTRIBUTES=deployment.environment=production,service.namespace=observability-platform
-ExecStart=${app_dir}/services/test-api/.venv/bin/opentelemetry-instrument ${app_dir}/services/test-api/.venv/bin/uvicorn app:app --host 0.0.0.0 --port 8080
+ExecStart=${app_dir}/services/test-api/.venv/bin/opentelemetry-instrument ${app_dir}/services/test-api/.venv/bin/uvicorn app:app --host 0.0.0.0 --port ${test_api_port}
 Restart=always
 RestartSec=5
 NoNewPrivileges=true

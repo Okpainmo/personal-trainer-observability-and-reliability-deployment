@@ -65,7 +65,7 @@ def fallback_runs() -> list[dict]:
 
 
 def collect():
-    service = "test-api"
+    service = os.getenv("SERVICE_NAME", "personal-trainer-be")
     try:
         runs = github_runs() or fallback_runs()
     except Exception:

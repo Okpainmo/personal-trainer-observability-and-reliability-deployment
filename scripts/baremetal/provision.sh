@@ -7,6 +7,7 @@ CONFIG_DIR="${CONFIG_DIR:-/etc/observability-platform}"
 DATA_DIR="${DATA_DIR:-/var/lib/observability-platform}"
 APP_DIR="${APP_DIR:-/opt/observability-platform}"
 SERVICE_USER="${SERVICE_USER:-observability}"
+DEPLOY_TEST_API="${DEPLOY_TEST_API:-false}"
 
 require_file() {
   local path="$1"
@@ -29,6 +30,8 @@ require_dir() {
 require_file "$GENERATED_DIR/slack_webhook_url"
 require_file "$GENERATED_DIR/secrets/dora-exporter.env"
 require_file "$GENERATED_DIR/grafana/grafana.ini"
+require_file "$GENERATED_DIR/prometheus/prometheus.yml"
+require_file "$GENERATED_DIR/otel-collector/config.yml"
 require_dir "$GENERATED_DIR/systemd"
 
 sudo useradd --system --home "$APP_DIR" --shell /usr/sbin/nologin "$SERVICE_USER" 2>/dev/null || true
@@ -55,13 +58,13 @@ sudo mkdir -p \
   "$DATA_DIR/tempo" \
   "$APP_DIR/services"
 
-sudo cp "$REPO_ROOT/observability/prometheus/prometheus.yml" "$CONFIG_DIR/prometheus/prometheus.yml"
+sudo cp "$GENERATED_DIR/prometheus/prometheus.yml" "$CONFIG_DIR/prometheus/prometheus.yml"
 sudo cp "$REPO_ROOT/observability/prometheus/rules/"*.yml "$CONFIG_DIR/prometheus/rules/"
 sudo cp "$REPO_ROOT/observability/alertmanager/alertmanager.yml" "$CONFIG_DIR/alertmanager/alertmanager.yml"
 sudo cp "$REPO_ROOT/observability/alertmanager/templates/"*.tmpl "$CONFIG_DIR/alertmanager/templates/"
 sudo cp "$REPO_ROOT/observability/loki/loki.yml" "$CONFIG_DIR/loki/loki.yml"
 sudo cp "$REPO_ROOT/observability/tempo/tempo.yml" "$CONFIG_DIR/tempo/tempo.yml"
-sudo cp "$REPO_ROOT/observability/otel-collector/config.yml" "$CONFIG_DIR/otel-collector/config.yml"
+sudo cp "$GENERATED_DIR/otel-collector/config.yml" "$CONFIG_DIR/otel-collector/config.yml"
 sudo cp "$REPO_ROOT/observability/blackbox/blackbox.yml" "$CONFIG_DIR/blackbox/blackbox.yml"
 sudo cp "$REPO_ROOT/observability/grafana/provisioning/datasources/datasources.yml" "$CONFIG_DIR/grafana/provisioning/datasources/datasources.yml"
 sudo cp "$REPO_ROOT/observability/grafana/provisioning/dashboards/dashboards.yml" "$CONFIG_DIR/grafana/provisioning/dashboards/dashboards.yml"
@@ -69,12 +72,20 @@ sudo cp "$REPO_ROOT/observability/grafana/dashboards/"*.json "$CONFIG_DIR/grafan
 sudo install -m 0600 "$GENERATED_DIR/slack_webhook_url" "$CONFIG_DIR/secrets/slack_webhook_url"
 sudo install -m 0600 "$GENERATED_DIR/secrets/dora-exporter.env" "$CONFIG_DIR/secrets/dora-exporter.env"
 
-sudo rsync -a --delete "$REPO_ROOT/services/test-api/" "$APP_DIR/services/test-api/"
+if [ "$DEPLOY_TEST_API" = "true" ]; then
+  sudo rsync -a --delete "$REPO_ROOT/services/test-api/" "$APP_DIR/services/test-api/"
+else
+  sudo systemctl disable --now test-api.service 2>/dev/null || true
+  sudo rm -f /etc/systemd/system/test-api.service
+  sudo rm -rf "$APP_DIR/services/test-api"
+fi
 sudo rsync -a --delete "$REPO_ROOT/services/dora-exporter/" "$APP_DIR/services/dora-exporter/"
 
-sudo python3 -m venv "$APP_DIR/services/test-api/.venv"
-sudo "$APP_DIR/services/test-api/.venv/bin/pip" install --upgrade pip
-sudo "$APP_DIR/services/test-api/.venv/bin/pip" install -r "$APP_DIR/services/test-api/requirements.txt"
+if [ "$DEPLOY_TEST_API" = "true" ]; then
+  sudo python3 -m venv "$APP_DIR/services/test-api/.venv"
+  sudo "$APP_DIR/services/test-api/.venv/bin/pip" install --upgrade pip
+  sudo "$APP_DIR/services/test-api/.venv/bin/pip" install -r "$APP_DIR/services/test-api/requirements.txt"
+fi
 
 sudo python3 -m venv "$APP_DIR/services/dora-exporter/.venv"
 sudo "$APP_DIR/services/dora-exporter/.venv/bin/pip" install --upgrade pip
@@ -94,28 +105,23 @@ sudo chmod 0600 "$CONFIG_DIR/secrets/slack_webhook_url"
 sudo chmod 0600 "$CONFIG_DIR/secrets/dora-exporter.env"
 
 sudo systemctl daemon-reload
-sudo systemctl enable --now \
-  prometheus.service \
-  alertmanager.service \
-  loki.service \
-  tempo.service \
-  otel-collector.service \
-  node-exporter.service \
-  blackbox-exporter.service \
-  test-api.service \
-  dora-exporter.service \
+services_to_manage=(
+  prometheus.service
+  alertmanager.service
+  loki.service
+  tempo.service
+  otel-collector.service
+  node-exporter.service
+  blackbox-exporter.service
+  dora-exporter.service
   grafana-server.service
+)
 
-sudo systemctl restart \
-  prometheus.service \
-  alertmanager.service \
-  loki.service \
-  tempo.service \
-  otel-collector.service \
-  node-exporter.service \
-  blackbox-exporter.service \
-  test-api.service \
-  dora-exporter.service \
-  grafana-server.service
+if [ "$DEPLOY_TEST_API" = "true" ]; then
+  services_to_manage+=(test-api.service)
+fi
+
+sudo systemctl enable --now "${services_to_manage[@]}"
+sudo systemctl restart "${services_to_manage[@]}"
 
 echo "bare-metal observability stack provisioned"

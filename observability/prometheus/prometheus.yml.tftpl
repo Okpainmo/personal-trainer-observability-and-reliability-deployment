@@ -1,0 +1,95 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: production
+    platform: observability-platform
+
+rule_files:
+  - /etc/observability-platform/prometheus/rules/*.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - 127.0.0.1:9093
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["127.0.0.1:9090"]
+
+  - job_name: ${monitored_service_name}
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["${monitored_service_metrics_target}"]
+        labels:
+          service: ${monitored_service_name}
+%{ if deploy_test_api ~}
+
+  - job_name: test-api
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["127.0.0.1:${test_api_port}"]
+        labels:
+          service: test-api
+%{ endif ~}
+
+  - job_name: node-exporter
+    scrape_interval: 15s
+    static_configs:
+      - targets: ["127.0.0.1:9100"]
+        labels:
+          service: node
+
+  - job_name: alertmanager
+    static_configs:
+      - targets: ["127.0.0.1:9093"]
+
+  - job_name: otel-collector
+    static_configs:
+      - targets: ["127.0.0.1:8888"]
+
+  - job_name: dora-exporter
+    static_configs:
+      - targets: ["127.0.0.1:9108"]
+        labels:
+          service: ${monitored_service_name}
+
+  - job_name: blackbox-http
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+%{ for target in http_probe_targets ~}
+          - ${target}
+%{ endfor ~}
+        labels:
+          service: edge-probe
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: 127.0.0.1:9115
+
+  - job_name: blackbox-ssl
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+%{ for target in ssl_probe_targets ~}
+          - ${target}
+%{ endfor ~}
+        labels:
+          service: ssl-probe
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: 127.0.0.1:9115

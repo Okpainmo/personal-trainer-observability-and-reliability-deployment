@@ -18,10 +18,11 @@ locals {
   generated_dir = abspath("${path.module}/.generated")
 
   unit_template_vars = {
-    service_user = var.service_user
-    config_dir   = var.config_dir
-    data_dir     = var.data_dir
-    app_dir      = var.app_dir
+    service_user  = var.service_user
+    config_dir    = var.config_dir
+    data_dir      = var.data_dir
+    app_dir       = var.app_dir
+    test_api_port = var.test_api_port
   }
 
   systemd_units = {
@@ -32,9 +33,16 @@ locals {
     otel-collector    = "${local.repo_root}/systemd/otel-collector.service.tftpl"
     node-exporter     = "${local.repo_root}/systemd/node-exporter.service.tftpl"
     blackbox-exporter = "${local.repo_root}/systemd/blackbox-exporter.service.tftpl"
-    test-api          = "${local.repo_root}/systemd/test-api.service.tftpl"
     dora-exporter     = "${local.repo_root}/systemd/dora-exporter.service.tftpl"
   }
+
+  optional_systemd_units = var.deploy_test_api ? {
+    test-api = "${local.repo_root}/systemd/test-api.service.tftpl"
+  } : {}
+
+  rendered_systemd_units = merge(local.systemd_units, local.optional_systemd_units)
+
+  http_probe_targets = concat([var.monitored_service_health_url], var.extra_http_probe_targets)
 }
 
 resource "local_sensitive_file" "slack_webhook" {
@@ -44,10 +52,34 @@ resource "local_sensitive_file" "slack_webhook" {
 }
 
 resource "local_file" "systemd_units" {
-  for_each = local.systemd_units
+  for_each = local.rendered_systemd_units
 
   filename        = "${local.generated_dir}/systemd/${each.key}.service"
   content         = templatefile(each.value, local.unit_template_vars)
+  file_permission = "0644"
+}
+
+resource "local_file" "prometheus_config" {
+  filename = "${local.generated_dir}/prometheus/prometheus.yml"
+  content = templatefile("${local.repo_root}/observability/prometheus/prometheus.yml.tftpl", {
+    monitored_service_name           = var.monitored_service_name
+    monitored_service_metrics_target = var.monitored_service_metrics_target
+    http_probe_targets               = local.http_probe_targets
+    ssl_probe_targets                = var.ssl_probe_targets
+    deploy_test_api                  = var.deploy_test_api
+    test_api_port                    = var.test_api_port
+  })
+  file_permission = "0644"
+}
+
+resource "local_file" "otel_collector_config" {
+  filename = "${local.generated_dir}/otel-collector/config.yml"
+  content = templatefile("${local.repo_root}/observability/otel-collector/config.yml.tftpl", {
+    monitored_service_name               = var.monitored_service_name
+    monitored_service_systemd_unit       = var.monitored_service_systemd_unit
+    collect_local_monitored_service_logs = var.collect_local_monitored_service_logs
+    deploy_test_api                      = var.deploy_test_api
+  })
   file_permission = "0644"
 }
 
@@ -66,6 +98,7 @@ resource "local_sensitive_file" "dora_env" {
     "GITHUB_REPOSITORY=${var.github_repository}",
     "GITHUB_TOKEN=${var.github_token}",
     "DEPLOYMENT_WORKFLOW_NAME=${var.deployment_workflow_name}",
+    "SERVICE_NAME=${var.monitored_service_name}",
     ""
   ])
   file_permission = "0600"
@@ -73,10 +106,10 @@ resource "local_sensitive_file" "dora_env" {
 
 resource "null_resource" "validate_repository_config" {
   triggers = {
-    prometheus_hash   = filesha256("${local.repo_root}/observability/prometheus/prometheus.yml")
     alertmanager_hash = filesha256("${local.repo_root}/observability/alertmanager/alertmanager.yml")
     grafana_ds_hash   = filesha256("${local.repo_root}/observability/grafana/provisioning/datasources/datasources.yml")
-    otel_hash         = filesha256("${local.repo_root}/observability/otel-collector/config.yml")
+    prometheus_hash   = local_file.prometheus_config.content_sha256
+    otel_hash         = local_file.otel_collector_config.content_sha256
     loki_hash         = filesha256("${local.repo_root}/observability/loki/loki.yml")
     tempo_hash        = filesha256("${local.repo_root}/observability/tempo/tempo.yml")
   }
@@ -126,6 +159,8 @@ resource "null_resource" "provision_bare_metal_stack" {
     local_file.systemd_units,
     local_sensitive_file.grafana_ini,
     local_sensitive_file.dora_env,
+    local_file.prometheus_config,
+    local_file.otel_collector_config,
     null_resource.validate_repository_config,
     null_resource.install_bare_metal_prereqs
   ]
@@ -142,12 +177,13 @@ resource "null_resource" "provision_bare_metal_stack" {
     working_dir = local.repo_root
     command     = "bash scripts/baremetal/provision.sh"
     environment = {
-      REPO_ROOT     = local.repo_root
-      GENERATED_DIR = local.generated_dir
-      CONFIG_DIR    = var.config_dir
-      DATA_DIR      = var.data_dir
-      APP_DIR       = var.app_dir
-      SERVICE_USER  = var.service_user
+      REPO_ROOT       = local.repo_root
+      GENERATED_DIR   = local.generated_dir
+      CONFIG_DIR      = var.config_dir
+      DATA_DIR        = var.data_dir
+      APP_DIR         = var.app_dir
+      SERVICE_USER    = var.service_user
+      DEPLOY_TEST_API = tostring(var.deploy_test_api)
     }
   }
 

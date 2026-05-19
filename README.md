@@ -58,7 +58,20 @@ github_repository = "owner/repository"
 github_token = ""
 deployment_workflow_name = "deploy.yml"
 install_binaries = true
+deploy_test_api = false
+test_api_port = 8081
+monitored_service_name = "personal-trainer-be"
+monitored_service_metrics_target = "127.0.0.1:8080"
+monitored_service_health_url = "http://127.0.0.1:8080/api/v1/health"
+monitored_service_systemd_unit = "personal-trainer-be.service"
+collect_local_monitored_service_logs = false
 ```
+
+For a monitored service running on another server, set `monitored_service_metrics_target`
+and `monitored_service_health_url` to the BE server address reachable from the
+observability server. Keep `collect_local_monitored_service_logs = false`; send
+BE logs from an app-host collector agent instead. See
+[remote service integration](docs/remote-service-integration.md).
 
 Deploy everything:
 
@@ -113,7 +126,7 @@ App root:
 - Grafana: http://localhost:3000
 - Prometheus: http://localhost:9090
 - Alertmanager: http://localhost:9093
-- Test API: http://localhost:8080
+- Test API: http://localhost:8081 when `deploy_test_api = true`
 - Loki API: http://localhost:3100
 - Tempo API: http://localhost:3200
 - Node Exporter: http://localhost:9100
@@ -143,9 +156,9 @@ journalctl -u test-api -f
 Generate telemetry:
 
 ```bash
-curl http://localhost:8080/workout
-curl "http://localhost:8080/workout?delay_ms=1200"
-curl "http://localhost:8080/workout?fail=true"
+curl http://localhost:8081/workout
+curl "http://localhost:8081/workout?delay_ms=1200"
+curl "http://localhost:8081/workout?fail=true"
 ```
 
 ## Dashboards
