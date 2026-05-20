@@ -28,6 +28,10 @@ receivers:
     priority: info
 %{ endif ~}
 
+extensions:
+  file_storage:
+    directory: ${data_dir}/otel-collector/file_storage
+
 processors:
   batch:
 
@@ -56,9 +60,29 @@ exporters:
     endpoint: 127.0.0.1:4319
     tls:
       insecure: true
+    retry_on_failure:
+      enabled: true
+      initial_interval: 1s
+      max_interval: 30s
+      max_elapsed_time: 300s
+    sending_queue:
+      enabled: true
+      num_consumers: 4
+      queue_size: 5000
+      storage: file_storage
 
   otlphttp/loki:
     endpoint: http://127.0.0.1:3100/otlp
+    retry_on_failure:
+      enabled: true
+      initial_interval: 1s
+      max_interval: 30s
+      max_elapsed_time: 300s
+    sending_queue:
+      enabled: true
+      num_consumers: 4
+      queue_size: 5000
+      storage: file_storage
 
   prometheus:
     endpoint: 0.0.0.0:8889
@@ -67,6 +91,7 @@ exporters:
     verbosity: basic
 
 service:
+  extensions: [file_storage]
   telemetry:
     metrics:
       address: 0.0.0.0:8888

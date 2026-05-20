@@ -21,6 +21,7 @@ validate-static:
 	python3 -m json.tool observability/grafana/dashboards/slo-error-budget.json >/dev/null
 	python3 -m json.tool services/dora-exporter/incidents.example.json >/dev/null
 	python3 -c 'import ast,pathlib; [ast.parse(pathlib.Path(p).read_text()) for p in ["services/test-api/app.py","services/dora-exporter/exporter.py"]]'
+	bash -n scripts/baremetal/install_prereqs.sh scripts/baremetal/provision.sh scripts/baremetal/destroy.sh scripts/app-host/install_otel_agent.sh
 
 validate: validate-static
 	terraform -chdir=terraform validate

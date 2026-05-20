@@ -56,6 +56,7 @@ sudo mkdir -p \
   "$DATA_DIR/alertmanager" \
   "$DATA_DIR/loki" \
   "$DATA_DIR/tempo" \
+  "$DATA_DIR/otel-collector/file_storage" \
   "$APP_DIR/services"
 
 sudo cp "$GENERATED_DIR/prometheus/prometheus.yml" "$CONFIG_DIR/prometheus/prometheus.yml"
