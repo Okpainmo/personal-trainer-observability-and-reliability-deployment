@@ -6,6 +6,10 @@ Metrics retention: 30 days in Prometheus.
 
 Log and trace retention: 7 days in Loki and Tempo.
 
+Primary service label: the configured `monitored_service_name` Terraform value.
+The bundled `test-api` can be used to validate these queries, but production
+SLOs should be evaluated against the real monitored service.
+
 ## Four Golden Signal SLIs
 
 ### Latency
@@ -31,6 +35,11 @@ histogram_quantile(
 SLO: 95% of successful requests should complete under 500ms.
 
 Rationale: this is strict enough to expose user-visible slowness while allowing short local-development and service startup variance.
+
+Implementation note: the monitored service must expose Prometheus histogram
+buckets named `http_request_duration_seconds_bucket` for this exact query. If
+the application exports a different metric name, update dashboards and rules
+together.
 
 ### Traffic
 
@@ -85,7 +94,7 @@ Rationale: saturation is a leading indicator; it predicts reliability loss befor
 ## Availability SLO
 
 ```promql
-avg_over_time(probe_success{instance="http://127.0.0.1:8080/health"}[30d])
+avg_over_time(probe_success{job="blackbox-http"}[30d])
 ```
 
 Target: 99.5% of probes return success over 30 days.
@@ -101,11 +110,17 @@ Error budget:
 Fast burn:
 
 ```promql
-job:http_error_ratio:rate1h{service="test-api"} > (14.4 * 0.005)
+job:http_error_ratio:rate1h{service="<monitored_service_name>"} > (14.4 * 0.005)
 ```
 
 Slow burn:
 
 ```promql
-job:http_error_ratio:rate6h{service="test-api"} > (5 * 0.005)
+job:http_error_ratio:rate6h{service="<monitored_service_name>"} > (5 * 0.005)
 ```
+
+## Alert Response
+
+- Fast burn means user impact is accumulating quickly. Treat it as an incident and start with [SLO burn runbook](../runbooks/slo-burn.md).
+- Slow burn means the budget is being consumed over a longer window. Review recent deployments, error logs, and saturation before approving more risky changes.
+- If the budget reaches 100% consumed, follow the [error budget policy](error-budget-policy.md) before resuming normal delivery.

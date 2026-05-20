@@ -2,18 +2,22 @@
 
 ## What this platform does
 
-This repo runs a full observability and reliability platform on a Linux host without Docker. Terraform installs/configures systemd services for Prometheus, Loki, Tempo, Grafana, Alertmanager, exporters, OpenTelemetry Collector, the demo API, and the DORA exporter.
+This repo runs a full observability and reliability platform on a Linux host without Docker. Terraform installs/configures systemd services for Prometheus, Loki, Tempo, Grafana, Alertmanager, exporters, OpenTelemetry Collector, the optional demo API, and the DORA exporter.
 
 The main goal is to move from "something is wrong" to "this endpoint/span/log line caused it" quickly.
+
+The platform usually monitors a real service configured in `terraform/terraform.tfvars`. The bundled `test-api` is only a smoke-test workload for generating known metrics, logs, traces, latency, and errors.
 
 ## How the services work together
 
 ```text
-test-api -> metrics -> Prometheus
-test-api -> traces -> OpenTelemetry Collector -> Tempo
+monitored service -> metrics -> Prometheus
+monitored service -> health URL -> Blackbox Exporter -> Prometheus
+monitored service -> traces/logs -> OpenTelemetry Collector -> Tempo/Loki
 systemd journals -> OpenTelemetry Collector -> Loki
 Prometheus alerts -> Alertmanager -> Slack #detrudr-alerts-demo
 Grafana -> Prometheus + Loki + Tempo
+DORA Exporter -> Prometheus
 ```
 
 ## Important URLs
@@ -21,7 +25,7 @@ Grafana -> Prometheus + Loki + Tempo
 - Grafana: http://localhost:3000
 - Prometheus: http://localhost:9090
 - Alertmanager: http://localhost:9093
-- Test API: http://localhost:8080
+- Test API: http://localhost:8081 when `deploy_test_api = true`
 - Loki API: http://localhost:3100
 - Tempo API: http://localhost:3200
 - Node Exporter: http://localhost:9100
@@ -37,6 +41,17 @@ cp terraform/terraform.tfvars.example terraform/terraform.tfvars
 ```
 
 Edit `terraform/terraform.tfvars` and set the Slack webhook, Grafana password, and optional GitHub credentials.
+
+For a real monitored service, also set:
+
+```hcl
+monitored_service_name = "personal-trainer-be"
+monitored_service_metrics_target = "<host-or-ip>:8080"
+monitored_service_health_url = "http://<host-or-ip>:8080/api/v1/health"
+collect_local_monitored_service_logs = false
+```
+
+Set `deploy_test_api = true` only when you want the bundled demo workload.
 
 Deploy:
 
@@ -86,19 +101,19 @@ journalctl -u test-api -f
 Generate normal traffic:
 
 ```bash
-curl http://localhost:8080/workout
+curl http://localhost:8081/workout
 ```
 
 Generate slow traffic:
 
 ```bash
-curl "http://localhost:8080/workout?delay_ms=1200"
+curl "http://localhost:8081/workout?delay_ms=1200"
 ```
 
 Generate an error:
 
 ```bash
-curl "http://localhost:8080/workout?fail=true"
+curl "http://localhost:8081/workout?fail=true"
 ```
 
 ## Grafana
@@ -224,10 +239,12 @@ Use Loki from Grafana Explore.
 Queries:
 
 ```logql
-{service_name="test-api"}
-{service_name="test-api"} | json
-{service_name="test-api"} | json | trace_id != ""
+{service_name="personal-trainer-be"}
+{service_name="personal-trainer-be"} | json
+{service_name="personal-trainer-be"} | json | trace_id != ""
 ```
+
+Use `test-api` instead of `personal-trainer-be` when validating the optional demo workload.
 
 ## Tempo
 
@@ -236,8 +253,10 @@ Use Tempo from Grafana Explore or by clicking a `trace_id` in Loki logs.
 TraceQL:
 
 ```traceql
-{ resource.service.name = "test-api" }
+{ resource.service.name = "personal-trainer-be" }
 ```
+
+Use `test-api` for traces emitted by the optional demo workload.
 
 ## Alertmanager and Slack
 
@@ -267,8 +286,8 @@ Start with the runbook linked in the Slack alert. If no alert is firing but the 
 
 1. Run `make up`.
 2. Open Grafana.
-3. Run `curl http://localhost:8080/workout`.
-4. Run `curl "http://localhost:8080/workout?delay_ms=1200"`.
+3. Run `curl http://localhost:8081/workout`.
+4. Run `curl "http://localhost:8081/workout?delay_ms=1200"`.
 5. Open Unified Observability and find the latency spike.
 6. Open Loki logs for the same time range.
 7. Click a `trace_id`.

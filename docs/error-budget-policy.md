@@ -29,6 +29,21 @@ Allowed monthly unreliability: 3.6 hours.
 - Work shifts to reliability recovery, rollback, or mitigation.
 - SLO and incident review must happen before normal delivery resumes.
 
+## Release Gates
+
+- Before releasing, check the SLO & Error Budget dashboard for the affected service.
+- If budget consumption is above 50%, the service owner must explicitly accept the release risk.
+- If budget consumption is at or above 100%, only reliability fixes, rollbacks, or mitigations should ship.
+- Emergency security fixes can bypass the freeze, but the incident review must record the decision.
+
 ## Decision ownership
 
 The service owner decides release risk with input from platform engineering. Platform engineering owns alert quality, dashboards, and the error-budget calculation.
+
+## Review Inputs
+
+- SLO burn alerts and alert history.
+- Unified Observability dashboard for latency, error, traffic, and saturation trends.
+- Loki logs and Tempo traces for the highest-impact failures.
+- DORA dashboard for recent deployments and change failure rate.
+- Post-incident review notes for repeated causes.
