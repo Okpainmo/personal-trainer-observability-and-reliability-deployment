@@ -68,8 +68,10 @@ deploy_test_api = false
 test_api_port = 8081
 monitored_service_name = "personal-trainer-be"
 monitored_service_metrics_target = "127.0.0.1:8080"
+monitored_service_metrics_scheme = "http"
+monitored_service_metrics_path = "/metrics"
 monitored_service_health_url = "http://127.0.0.1:8080/api/v1/health"
-monitored_service_systemd_unit = "personal-trainer-be.service"
+monitored_service_systemd_unit = "personal-trainer-backend-staging.service"
 collect_local_monitored_service_logs = false
 ```
 
@@ -78,6 +80,14 @@ and `monitored_service_health_url` to the BE server address reachable from the
 observability server. Keep `collect_local_monitored_service_logs = false`; send
 BE logs from an app-host collector agent instead. See
 [remote service integration](docs/remote-service-integration.md).
+
+For HTTPS metrics endpoints, set the target as `host:port` and the scheme separately:
+
+```hcl
+monitored_service_metrics_target = "api.staging.fitcall.me:443"
+monitored_service_metrics_scheme = "https"
+monitored_service_metrics_path = "/metrics"
+```
 
 For a monitored service running on the same host as the observability stack, set
 `collect_local_monitored_service_logs = true` and make sure
@@ -118,6 +128,7 @@ It also provisions:
 - Prometheus scrape targets for the monitored service, exporters, and optional `test-api`.
 - Blackbox probe targets for service health checks and SSL checks.
 - OpenTelemetry Collector pipelines for OTLP traces, OTLP logs, platform journals, and optionally local monitored-service journals.
+- File-backed Collector retry queues for trace and log forwarding.
 - Grafana dashboards and datasource provisioning.
 - Alertmanager Slack routing with runbook/dashboard links.
 
@@ -158,6 +169,7 @@ Loki and Tempo are API backends. Their root browser URL may return `404`; use Gr
 ```text
 terraform/                 Terraform variables, rendering, and local-exec orchestration
 scripts/baremetal/         Install, provision, and destroy scripts
+scripts/app-host/          Remote application-host OpenTelemetry Collector agent installer
 systemd/                   systemd unit templates rendered by Terraform
 observability/
   prometheus/              Prometheus config template and alert rules
@@ -247,3 +259,5 @@ Do not commit:
 - `.terraform/`
 
 These are ignored by `.gitignore`.
+
+<!--fix/logs-and-tracing-->

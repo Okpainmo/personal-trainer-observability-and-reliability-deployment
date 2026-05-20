@@ -64,6 +64,8 @@ resource "local_file" "prometheus_config" {
   content = templatefile("${local.repo_root}/observability/prometheus/prometheus.yml.tftpl", {
     monitored_service_name           = var.monitored_service_name
     monitored_service_metrics_target = var.monitored_service_metrics_target
+    monitored_service_metrics_scheme = var.monitored_service_metrics_scheme
+    monitored_service_metrics_path   = var.monitored_service_metrics_path
     http_probe_targets               = local.http_probe_targets
     ssl_probe_targets                = var.ssl_probe_targets
     deploy_test_api                  = var.deploy_test_api
@@ -79,6 +81,7 @@ resource "local_file" "otel_collector_config" {
     monitored_service_systemd_unit       = var.monitored_service_systemd_unit
     collect_local_monitored_service_logs = var.collect_local_monitored_service_logs
     deploy_test_api                      = var.deploy_test_api
+    data_dir                             = var.data_dir
   })
   file_permission = "0644"
 }

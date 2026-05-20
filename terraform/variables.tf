@@ -72,6 +72,23 @@ variable "monitored_service_metrics_target" {
   default     = "127.0.0.1:8080"
 }
 
+variable "monitored_service_metrics_scheme" {
+  description = "Scheme Prometheus should use when scraping the monitored application's metrics endpoint."
+  type        = string
+  default     = "http"
+
+  validation {
+    condition     = contains(["http", "https"], var.monitored_service_metrics_scheme)
+    error_message = "monitored_service_metrics_scheme must be either \"http\" or \"https\"."
+  }
+}
+
+variable "monitored_service_metrics_path" {
+  description = "HTTP path Prometheus should scrape for monitored application metrics."
+  type        = string
+  default     = "/metrics"
+}
+
 variable "monitored_service_health_url" {
   description = "HTTP URL Blackbox Exporter should probe for the monitored application's health check."
   type        = string
@@ -81,7 +98,7 @@ variable "monitored_service_health_url" {
 variable "monitored_service_systemd_unit" {
   description = "systemd unit name for the monitored application. Used by local journald collection or by a remote app-host collector agent."
   type        = string
-  default     = "personal-trainer-be.service"
+  default     = "personal-trainer-backend-staging.service"
 }
 
 variable "collect_local_monitored_service_logs" {
