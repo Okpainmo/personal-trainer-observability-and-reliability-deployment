@@ -152,11 +152,22 @@ Use remote mode when the application service runs on a different host:
 ```hcl
 monitored_service_name = "personal-trainer-be"
 monitored_service_metrics_target = "<app-private-ip-or-dns>:8080"
+monitored_service_metrics_scheme = "http"
 monitored_service_health_url = "http://<app-private-ip-or-dns>:8080/api/v1/health"
 collect_local_monitored_service_logs = false
 ```
 
 The observability host must reach the app host on the metrics and health-check ports. The app host must reach the observability host on OTLP ports `4317` and/or `4318` if it pushes logs or traces.
+
+For remote services, the preferred path is an app-host OpenTelemetry Collector
+agent. The backend exports traces to `127.0.0.1:4317`; the app-host agent tails
+the backend systemd journal and forwards both logs and traces to the central
+Collector on `4317`.
+
+Both the app-host agent and the central Collector use retry queues backed by
+file storage. This does not replace long-term telemetry storage, but it protects
+against short restarts and transient network failures between the backend host,
+Collector, Loki, and Tempo.
 
 ## Filesystem layout
 
@@ -210,6 +221,7 @@ Generated files flow from `terraform/.generated` into the runtime paths above. D
 | Prometheus scrape config | `observability/prometheus/prometheus.yml.tftpl` |
 | Prometheus alert rules | `observability/prometheus/rules/*.yml` |
 | Collector pipelines | `observability/otel-collector/config.yml.tftpl` |
+| App-host collector installer | `scripts/app-host/install_otel_agent.sh` |
 | Alertmanager routing | `observability/alertmanager/alertmanager.yml` |
 | Slack alert template | `observability/alertmanager/templates/slack.tmpl` |
 | Grafana dashboards | `observability/grafana/dashboards/*.json` |
