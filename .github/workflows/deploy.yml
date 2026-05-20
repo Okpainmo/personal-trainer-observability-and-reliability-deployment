@@ -2,19 +2,20 @@ name: deploy
 
 on:
   workflow_dispatch:
+  pull_request:
   push:
     branches: ["main"]
 
 jobs:
-  deploy:
+  validate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Validate compose and Terraform layout
-        run: |
-          docker compose -f docker-compose.yml config >/dev/null
-          terraform -chdir=terraform fmt -check
+      - uses: hashicorp/setup-terraform@v3
 
-      - name: Deployment confirmation
-        run: echo "Deployment confirmed for test-api"
+      - name: Validate repository layout
+        run: make validate-static
+
+      - name: Validation confirmation
+        run: echo "Static validation passed"
